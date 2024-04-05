@@ -1,10 +1,13 @@
-1. 본인 home에 디렉토리 생성
+# 2024_graduation_project
+S/W Platform for Team 1 of graduation project
 
-2. Clone repository 
-
-   git clone https://github.com/eonsoo1/2024_graduation_project.git
-
-4. Build 
-
-   catkin_make
-   source devel/setup.bash
+## Run
+1. Clone repository
+```
+ git clone https://github.com/eonsoo1/2024_graduation_project.git
+```
+2. Build
+```
+catkin_make
+source devel/setup.bash
+```
