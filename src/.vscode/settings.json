@@ -1,0 +1,21 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/eonsoo/2024_graduation_project/devel/lib/python3/dist-packages",
+        "/home/eonsoo/carla-ros-bridge/catkin_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "/opt/carla-simulator/PythonAPI/carla/dist/carla-0.9.12-py3.7-linux-x86_64.egg",
+        "/opt/carla-simulator/PythonAPI/carla"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/eonsoo/2024_graduation_project/devel/lib/python3/dist-packages",
+        "/home/eonsoo/carla-ros-bridge/catkin_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "/opt/carla-simulator/PythonAPI/carla/dist/carla-0.9.12-py3.7-linux-x86_64.egg",
+        "/opt/carla-simulator/PythonAPI/carla"
+    ],
+    "files.associations": {
+        "chrono": "cpp",
+        "cmath": "cpp",
+        "ostream": "cpp"
+    }
+}

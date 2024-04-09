@@ -1,118 +1,29 @@
-// #include "localization/imu_deadreckoning.hpp"
+#include "localization/imu_deadreckoning.hpp"
 
-#include <iostream>
-#include <ros/ros.h>
-
-#include <sensor_msgs/Imu.h>
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
-#include <geometry_msgs/PointStamped.h>
-#include <geometry_msgs/Quaternion.h>
-#include <geometry_msgs/Vector3.h>
-
-#include <string>
-#include <std_msgs/Float32.h>
-#include <Eigen/Dense>
-#include <cmath>
-
-#include <tf/transform_broadcaster.h>
-#include <geometry_msgs/TransformStamped.h>
-#include <tf2/LinearMath/Quaternion.h>
-
-#include <thread>
-
-#include <lanelet2_core/LaneletMap.h>
-#include <lanelet2_io/Io.h>
-#include <lanelet2_projection/UTM.h>
-
-#define PI 3.14159265359
-
-using namespace std;
-
-class Deadreckoning{
-    private:
-        ros::NodeHandle nh;
-        ros::Publisher marker_pub;
-        ros::Publisher z_calibration_velocity_pub;
-        ros::Subscriber imu_sub;
-        ros::Subscriber utm_coord_sub;
-
-        geometry_msgs::Quaternion orientation;
-        geometry_msgs::Point p;           
-        // geometry_msgs::Vector3 velocity;
-        // geometry_msgs::Vector3 acceleration;
-        geometry_msgs::Vector3 calibration_velocity_offsets;
-        
-        vector<geometry_msgs::Vector3> calibration_velocity_data;
-        
-        Eigen::Vector3d gravity;
-        visualization_msgs::Marker imu_path;
-        chrono::steady_clock::time_point start_time;
-        ros::Time time;
-
-        tf::TransformBroadcaster tfcaster;
-
-        // std_msgs::Float32 velocity_x;
-        // std_msgs::Float32 velocity_y;
-        // std_msgs::Float32 velocity_z;
-        // std_msgs::Float32 acceleration_x;
-        // std_msgs::Float32 acceleration_y;
-        // std_msgs::Float32 acceleration_z;
-        std_msgs::Float32 calib_velocity_z;
-
-        double m_delta_time;
-        double m_yaw_rate; 
-        double m_dVehicleVel_ms;
-        double m_prev_velocity;
-        bool m_collet_time;
-     
-        double m_utm_x = 0;
-        double m_utm_y = 0;
-        double m_origin_x = 0;
-        double m_origin_y = 0;
-
-        double m_imu_x;
-        double m_imu_y;
-        double m_imu_yaw;
-        bool initial_time = true;
-        bool m_utm_msg;
-
-    public :
-        Deadreckoning();
-        ~Deadreckoning(){};
-        void UTMCallback(const geometry_msgs::Point::ConstPtr& utm_coord_msg);
-        void ImuCallback(const sensor_msgs::Imu::ConstPtr& imu_data_msg);
-        void IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg, 
-                                    const geometry_msgs::Vector3 &accel_msg);
-        void Pub();
-        void CalcOrientation(const geometry_msgs::Quaternion &msg);
-        void CollectCalibrationData(std::vector<geometry_msgs::Vector3>& calibration_data, const geometry_msgs::Vector3& msg);
-        void CalibrateAccelerometer(const std::vector<geometry_msgs::Vector3>& calibration_data,
-                            geometry_msgs::Vector3& calibration_offsets);
-};
 
 Deadreckoning::Deadreckoning(){
     imu_sub = nh.subscribe("/imu/data", 1000, &Deadreckoning::ImuCallback, this);
-    z_calibration_velocity_pub  = nh.advertise<std_msgs::Float32>("z_calib_velocity", 1000);
     utm_coord_sub = nh.subscribe("/utm_coord", 1000, &Deadreckoning::UTMCallback, this);
-
+    gps_velocity_sub = nh.subscribe("/ublox_gps/fix_velocity", 1000, &Deadreckoning::GPSVelocityCallback, this);
+    z_calibration_velocity_pub  = nh.advertise<std_msgs::Float32>("z_calib_velocity", 1000);
+    imu_pose_pub = nh.advertise<localization::PoseMsg>("/imu_pose", 1000);
     start_time = std::chrono::steady_clock::now();
     m_collet_time = true;
     m_utm_msg = false;
-
- 
+    m_gps_yaw_trigger = false;
     m_prev_velocity = 0;
 
 };
 
 void Deadreckoning::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_coord_msg){
+
     if(!m_utm_msg){
         m_utm_x = utm_coord_msg->x;
         m_utm_y = utm_coord_msg->y;
         m_origin_x = m_utm_x;
         m_origin_y = m_utm_y;
-
-
+        m_prev_utm_x = m_origin_x;
+        m_prev_utm_y = m_origin_y;
         marker_pub = nh.advertise<visualization_msgs::Marker>("/imu_dr_path", 1000);
         imu_path.header.frame_id = "world"; // Set the frame id
         imu_path.header.stamp = ros::Time::now();
@@ -140,8 +51,19 @@ void Deadreckoning::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_coord_
     else{
         m_utm_x = utm_coord_msg->x;
         m_utm_y = utm_coord_msg->y;
+        if(!m_gps_yaw_trigger){
+            m_gps_yaw = atan2((m_utm_y - m_prev_utm_y), (m_utm_x - m_prev_utm_x));
+            m_gps_yaw_trigger = true;
+        }
     }
 
+
+}
+
+void Deadreckoning::GPSVelocityCallback(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr& gps_velocity_msg){
+    m_velocity_x = gps_velocity_msg->twist.twist.linear.x;
+    m_velocity_y = gps_velocity_msg->twist.twist.linear.y;
+    m_velocity_z = gps_velocity_msg->twist.twist.linear.z;
 }
 
 void Deadreckoning::ImuCallback(const sensor_msgs::Imu::ConstPtr& imu_data_msg){
@@ -170,6 +92,9 @@ void Deadreckoning::ImuCallback(const sensor_msgs::Imu::ConstPtr& imu_data_msg){
             CalcOrientation(imu_data_msg->orientation);
             m_prev_velocity = 0;
             initial_time = false; // 첫 번째 시간 플래그를 해제합니다.
+            // m_imu_yaw = m_gps_yaw;
+            cout << "-------------" << endl;
+            cout<< "Initial yaw(degree) : " << m_imu_yaw << endl;
         } 
         
         else {
@@ -219,6 +144,14 @@ void Deadreckoning::Pub(){
     cout << "Y : " << m_imu_y << endl;
     cout << "Yaw : " << m_imu_yaw << endl;
     cout << "Velocity : " << m_dVehicleVel_ms << endl;
+
+    localization::PoseMsg imu_pose;
+
+    imu_pose.pose_x = m_imu_x;
+    imu_pose.pose_y = m_imu_y;
+    imu_pose.pose_yaw = m_imu_yaw;
+
+    imu_pose_pub.publish(imu_pose);
     marker_pub.publish(imu_path);
     z_calibration_velocity_pub.publish(calib_velocity_z);
 };
@@ -234,14 +167,15 @@ void Deadreckoning::CalcOrientation(const geometry_msgs::Quaternion &msg){
     ); 
     tf::Matrix3x3 m(odom_quat);
     m.getRPY(roll, pitch, yaw);
-    cout << "-------------" << endl;
-    cout<< "Initial yaw(degree) : " << m_imu_yaw << endl;
-    m_imu_yaw = yaw * 180 / PI;
+   
+    m_imu_yaw = yaw * 180 / M_PI;
 
 }
 
 void Deadreckoning::IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg, 
                                             const geometry_msgs::Vector3 &accel_msg) {
+
+                                                
     m_yaw_rate = (velocity_msg.z); // 각속도 보정
     calib_velocity_z.data = m_yaw_rate;
     
@@ -251,9 +185,9 @@ void Deadreckoning::IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg,
     
     // m_dVehicleVel_ms = m_prev_velocity + sqrt(pow((accel_msg.x * m_delta_time), 2) + pow((accel_msg.y * m_delta_time), 2));
     // m_dVehicleVel_ms = (m_prev_velocity) + sqrt(pow((accel_msg.x), 2) + pow((accel_msg.y), 2)) * m_delta_time;
-    m_dVehicleVel_ms = 1.5;  
+    m_dVehicleVel_ms = sqrt(pow(m_velocity_x, 2) + pow(m_velocity_y, 2) + pow(m_velocity_z, 2));  
+   
     m_prev_velocity = m_dVehicleVel_ms;
-    
     dx = m_dVehicleVel_ms * m_delta_time * cos(m_imu_yaw);
     dy = m_dVehicleVel_ms * m_delta_time * sin(m_imu_yaw);
 
@@ -261,10 +195,24 @@ void Deadreckoning::IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg,
     m_imu_y += dy;
     m_imu_yaw += dyaw;
 
+    if(m_imu_x > 9999. || m_imu_x < -9999.){
+        cout << "IMU X : " << m_imu_x << endl;
+        m_imu_x = 0;
+    }
+    
     p.x = m_origin_x - m_imu_x;
     p.y = m_origin_y - m_imu_y;
     p.z = 0;
 
+    // tf::Transform transform;
+
+    // transform.setOrigin(tf::Vector3(m_utm_x, m_utm_y, 0.0));
+    // tf::Quaternion q1;
+    // q1.setRPY(0, 0, m_imu_yaw);
+    // transform.setRotation(q1);
+
+    // tfcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "dr_frame"));
+  
     imu_path.points.push_back(p);
 
 }

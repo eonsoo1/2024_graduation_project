@@ -131,6 +131,15 @@ endif()
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("/home/eonsoo/2024_graduation_project/build/gtest/cmake_install.cmake")
+  include("/home/eonsoo/2024_graduation_project/build/Localization/ublox_f9p/ntrip_ros_python3/cmake_install.cmake")
+  include("/home/eonsoo/2024_graduation_project/build/Localization/ublox_f9p/rtcm_msgs/cmake_install.cmake")
+  include("/home/eonsoo/2024_graduation_project/build/Localization/ublox_f9p/ublox/cmake_install.cmake")
+  include("/home/eonsoo/2024_graduation_project/build/Localization/localization/cmake_install.cmake")
+  include("/home/eonsoo/2024_graduation_project/build/Localization/myahrs_driver/cmake_install.cmake")
+  include("/home/eonsoo/2024_graduation_project/build/Localization/ublox_f9p/ublox_serialization/cmake_install.cmake")
+  include("/home/eonsoo/2024_graduation_project/build/Localization/ublox_f9p/ublox_msgs/cmake_install.cmake")
+  include("/home/eonsoo/2024_graduation_project/build/Localization/ublox_f9p/ublox_gps/cmake_install.cmake")
+  include("/home/eonsoo/2024_graduation_project/build/Localization/ublox_f9p/ROS-UTM-LLA/cmake_install.cmake")
 
 endif()
 

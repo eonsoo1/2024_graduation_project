@@ -1,0 +1,30 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "${default}",
+                "limitSymbolsToIncludedHeaders": false
+            },
+            "includePath": [
+                "/home/eonsoo/2024_graduation_project/devel/include/**",
+                "/home/eonsoo/carla-ros-bridge/catkin_ws/devel/include/**",
+                "/opt/ros/noetic/include/**",
+                "/home/eonsoo/2024_graduation_project/src/Localization/localization/msg/**",
+                "/home/eonsoo/2024_graduation_project/src/Localization/localization/include/**",
+                "/home/eonsoo/2024_graduation_project/src/Localization/myahrs_driver/include/**",
+                "/home/eonsoo/carla-ros-bridge/catkin_ws/src/ros-bridge/pcl_recorder/include/**",
+                "/home/eonsoo/2024_graduation_project/src/Localization/ublox_f9p/ublox_gps/include/**",
+                "/home/eonsoo/2024_graduation_project/src/Localization/ublox_f9p/ublox_msgs/include/**",
+                "/home/eonsoo/2024_graduation_project/src/Localization/ublox_f9p/ublox_serialization/include/**",
+                "/home/eonsoo/2024_graduation_project/src/Localization/ublox_f9p/ROS-UTM-LLA/include/**",
+                "/usr/include/**"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu11",
+            "cppStandard": "c++14"
+        }
+    ],
+    "version": 4
+}
