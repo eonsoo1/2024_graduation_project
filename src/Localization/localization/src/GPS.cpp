@@ -6,8 +6,6 @@ GPS::GPS(){
     gps_sub = nh.subscribe("/ublox_gps/fix", 1000, &GPS::GPSCallback, this);
     
     m_origin = lanelet::Origin({ORIGIN_LAT, ORIGIN_LON});
-  
-
  }
 
 void GPS::GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg){
