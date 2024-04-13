@@ -1,8 +1,10 @@
 <launch>
+  <arg name="m_init_yaw" default="3.0"/>
   <node pkg="localization" type="GPS_node" name="GPS_node" >
   </node>
     <node pkg="localization" type="imu_deadreckoning" name="imu_deadreckoning_node"  output="screen">
   </node>
+        <param name="init_yaw" type="double" value="$(arg m_init_yaw)" />
      <node pkg="localization" type="EKF_node" name="EKF_node" >
   </node>
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find localization)/local_cfg/localization.rviz" />

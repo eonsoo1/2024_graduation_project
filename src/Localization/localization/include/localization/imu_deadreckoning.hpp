@@ -29,6 +29,7 @@
 
 
 // #define M_PI 3.14159265359
+#define INITIAL_YAW 240.0
 
 using namespace std;
 
@@ -73,7 +74,9 @@ class Deadreckoning{
         double m_dVehicleVel_ms;
         double m_prev_velocity;
         bool m_collet_time;
-     
+
+        double m_init_yaw;
+        
         double m_utm_x = 0;
         double m_utm_y = 0;
         double m_origin_x = 0;

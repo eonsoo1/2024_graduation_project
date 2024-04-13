@@ -2,6 +2,7 @@
 
 
 Deadreckoning::Deadreckoning(){
+    
     imu_sub = nh.subscribe("/imu/data", 1000, &Deadreckoning::ImuCallback, this);
     utm_coord_sub = nh.subscribe("/utm_coord", 1000, &Deadreckoning::UTMCallback, this);
     gps_velocity_sub = nh.subscribe("/ublox_gps/fix_velocity", 1000, &Deadreckoning::GPSVelocityCallback, this);
@@ -12,7 +13,7 @@ Deadreckoning::Deadreckoning(){
     m_utm_msg = false;
     m_gps_yaw_trigger = false;
     m_prev_velocity = 0;
-
+    nh.param("init_yaw", m_init_yaw, INITIAL_YAW);
 };
 
 void Deadreckoning::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_coord_msg){
@@ -91,12 +92,12 @@ void Deadreckoning::ImuCallback(const sensor_msgs::Imu::ConstPtr& imu_data_msg){
             CalibrateAccelerometer(calibration_velocity_data, calibration_velocity_offsets);
             CalcOrientation(imu_data_msg->orientation);
             m_prev_velocity = 0;
+            m_imu_yaw = m_init_yaw;
             initial_time = false; // 첫 번째 시간 플래그를 해제합니다.
-            // m_imu_yaw = m_gps_yaw;
+            // m_imu_yaw = m_imu_yaw * 180/M_PI;
             cout << "-------------" << endl;
             cout<< "Initial yaw(degree) : " << m_imu_yaw << endl;
         } 
-        
         else {
             // m_delta_time = (imu_data_msg->header.stamp - time).toSec(); // 시간 간격을 설정합니다.
             m_delta_time = 0.01;
@@ -106,7 +107,6 @@ void Deadreckoning::ImuCallback(const sensor_msgs::Imu::ConstPtr& imu_data_msg){
 
         }
     }
-
 };
 
 void Deadreckoning::CollectCalibrationData(std::vector<geometry_msgs::Vector3>& calibration_data, const geometry_msgs::Vector3& msg) {
@@ -139,12 +139,7 @@ void Deadreckoning::CalibrateAccelerometer(const std::vector<geometry_msgs::Vect
 
 
 void Deadreckoning::Pub(){
-    cout << "-------------" << endl;
-    cout << "X : " << m_imu_x << endl;
-    cout << "Y : " << m_imu_y << endl;
-    cout << "Yaw : " << m_imu_yaw << endl;
-    cout << "Velocity : " << m_dVehicleVel_ms << endl;
-
+   
     localization::PoseMsg imu_pose;
 
     imu_pose.pose_x = m_imu_x;
@@ -173,10 +168,8 @@ void Deadreckoning::CalcOrientation(const geometry_msgs::Quaternion &msg){
 }
 
 void Deadreckoning::IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg, 
-                                            const geometry_msgs::Vector3 &accel_msg) {
-
-                                                
-    m_yaw_rate = (velocity_msg.z); // 각속도 보정
+                                            const geometry_msgs::Vector3 &accel_msg) {                                     
+    m_yaw_rate = (velocity_msg.z) ; // 각속도 보정
     calib_velocity_z.data = m_yaw_rate;
     
     double dx = 0.0;
@@ -185,9 +178,10 @@ void Deadreckoning::IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg,
     
     // m_dVehicleVel_ms = m_prev_velocity + sqrt(pow((accel_msg.x * m_delta_time), 2) + pow((accel_msg.y * m_delta_time), 2));
     // m_dVehicleVel_ms = (m_prev_velocity) + sqrt(pow((accel_msg.x), 2) + pow((accel_msg.y), 2)) * m_delta_time;
-    m_dVehicleVel_ms = sqrt(pow(m_velocity_x, 2) + pow(m_velocity_y, 2) + pow(m_velocity_z, 2));  
+    m_dVehicleVel_ms = sqrt(pow(m_velocity_x, 2) + pow(m_velocity_y, 2));  
    
     m_prev_velocity = m_dVehicleVel_ms;
+
     dx = m_dVehicleVel_ms * m_delta_time * cos(m_imu_yaw);
     dy = m_dVehicleVel_ms * m_delta_time * sin(m_imu_yaw);
 
@@ -203,6 +197,12 @@ void Deadreckoning::IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg,
     p.x = m_origin_x - m_imu_x;
     p.y = m_origin_y - m_imu_y;
     p.z = 0;
+
+    cout << "-------------" << endl;
+    cout << "X : " << m_imu_x << endl;
+    cout << "Y : " << m_imu_y << endl;
+    cout << "Yaw : " << m_imu_yaw << endl;
+    cout << "Velocity : " << m_dVehicleVel_ms << endl;
 
     // tf::Transform transform;
 
