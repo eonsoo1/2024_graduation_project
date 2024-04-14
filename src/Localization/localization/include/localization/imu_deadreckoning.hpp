@@ -95,7 +95,8 @@ class Deadreckoning{
         double m_gps_yaw;
 
         bool initial_time = true;
-        bool m_utm_msg;
+        bool m_utm_bool;
+        bool m_gps_vel_bool;
         
         bool m_gps_yaw_trigger;
 
@@ -110,6 +111,6 @@ class Deadreckoning{
         void Pub();
         void CalcOrientation(const geometry_msgs::Quaternion &msg);
         void CollectCalibrationData(std::vector<geometry_msgs::Vector3>& calibration_data, const geometry_msgs::Vector3& msg);
-        void CalibrateAccelerometer(const std::vector<geometry_msgs::Vector3>& calibration_data,
+        void CalibrateSensor(const std::vector<geometry_msgs::Vector3>& calibration_data,
                             geometry_msgs::Vector3& calibration_offsets);
 };
