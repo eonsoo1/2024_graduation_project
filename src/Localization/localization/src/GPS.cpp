@@ -4,15 +4,22 @@ GPS::GPS(){
     utm_pub = nh.advertise<geometry_msgs::Point>("/utm_coord", 1000);
     marker_pub = nh.advertise<visualization_msgs::Marker>("/gps_path", 1000);
     gps_sub = nh.subscribe("/ublox_gps/fix", 1000, &GPS::GPSCallback, this);
-    
-    m_origin = lanelet::Origin({ORIGIN_LAT, ORIGIN_LON});
+    gps_bool = false;
+    // m_origin = lanelet::Origin({ORIGIN_LAT, ORIGIN_LON}); // 삼각지 기준 rviz mapping
  }
 
 void GPS::GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg){
+
     m_lat = gps_data_msg->latitude;
     m_lon = gps_data_msg->longitude;
     m_alt = gps_data_msg->altitude;  
 
+    // 시작점 기준 rviz mapping
+    if(!gps_bool){
+        m_origin = lanelet::Origin({m_lat, m_lon});
+        gps_bool = true;
+    }
+    
     m_gps_point.lat = m_lat;
     m_gps_point.lon = m_lon;
     lanelet::projection::UtmProjector projection(m_origin);
@@ -20,7 +27,6 @@ void GPS::GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg){
     m_utm_point.x() = projection.forward(m_gps_point).x();
     m_utm_point.y() = projection.forward(m_gps_point).y();
     
- 
 
     gps_path.header.frame_id = "world"; // marker의 좌표 프레임 설정
     gps_path.header.stamp = ros::Time::now();

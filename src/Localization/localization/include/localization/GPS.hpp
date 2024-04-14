@@ -49,7 +49,7 @@ class GPS{
         double m_utm_x;
         double m_utm_y;
         double m_utm_z;
-
+        bool gps_bool;
     public :
         GPS();
         ~GPS(){};
