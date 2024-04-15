@@ -46,8 +46,6 @@ void Deadreckoning::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_coord_
         p.y = m_origin_y;
         p.z = 0;
 
-       
-
         transform.setOrigin(tf::Vector3(p.x, p.y, 0.0));
         q1.setRPY(0, 0, 0);
         transform.setRotation(q1);
@@ -82,6 +80,7 @@ void Deadreckoning::GPSVelocityCallback(const geometry_msgs::TwistWithCovariance
 void Deadreckoning::ImuCallback(const sensor_msgs::Imu::ConstPtr& imu_data_msg){
     if(m_utm_bool && m_gps_vel_bool){
         m_delta_time = 0.01;
+        
         //초기값 설정 단계
         if (initial_time) {
             if(m_dVehicleVel_ms < 0.1){
@@ -97,9 +96,9 @@ void Deadreckoning::ImuCallback(const sensor_msgs::Imu::ConstPtr& imu_data_msg){
                 // CalcOrientation(imu_data_msg->orientation); // 초기값 정해주는 문장 이후 다시 설정 예정
                 m_prev_velocity = 0;
                 m_imu_yaw = m_init_yaw * M_PI / 180; //convert degree to radian
-                initial_time = false; // 첫 번째 시간 플래그를 해제합니다.
                 cout << "--------------------" << endl;
                 cout<< "Initial yaw(degree) : " << m_imu_yaw << endl;
+                initial_time = false; // 첫 번째 시간 플래그를 해제합니다.
             } 
         }
         //초기값 설정 이후 

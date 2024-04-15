@@ -8,6 +8,7 @@ Panels:
         - /Status1
         - /Grid1
         - /TF1
+        - /Marker3
       Splitter Ratio: 0.5
     Tree Height: 942
   - Class: rviz/Selection
@@ -58,7 +59,7 @@ Visualization Manager:
       Marker Topic: /gps_path
       Name: Marker
       Namespaces:
-        {}
+        gps_marker: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -66,7 +67,7 @@ Visualization Manager:
       Marker Topic: /imu_dr_path
       Name: Marker
       Namespaces:
-        {}
+        line_strip: true
       Queue Size: 100
       Value: true
     - Class: rviz/TF
@@ -76,6 +77,14 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
+        ekf_frame:
+          Value: true
+        gps_frame:
+          Value: true
+        imu_frame:
+          Value: true
+        world:
+          Value: true
       Marker Alpha: 1
       Marker Scale: 15
       Name: TF
@@ -83,8 +92,22 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        world:
+          ekf_frame:
+            {}
+          gps_frame:
+            {}
+          imu_frame:
+            {}
       Update Interval: 0
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /ekf_path
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
       Value: true
   Enabled: true
   Global Options:
@@ -113,7 +136,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
+      Angle: -0.01999998837709427
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -123,7 +146,7 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 12.543999671936035
+      Scale: 30.528427124023438
       Target Frame: <Fixed Frame>
       X: 0
       Y: 0
