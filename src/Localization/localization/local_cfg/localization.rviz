@@ -58,7 +58,7 @@ Visualization Manager:
       Marker Topic: /gps_path
       Name: Marker
       Namespaces:
-        gps_marker: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -66,7 +66,7 @@ Visualization Manager:
       Marker Topic: /imu_dr_path
       Name: Marker
       Namespaces:
-        line_strip: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/TF
@@ -76,20 +76,14 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
-        gps_frame:
-          Value: true
-        world:
-          Value: true
       Marker Alpha: 1
-      Marker Scale: 30
+      Marker Scale: 15
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        world:
-          gps_frame:
-            {}
+        {}
       Update Interval: 0
       Value: true
   Enabled: true
@@ -129,10 +123,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 34.19239044189453
+      Scale: 12.543999671936035
       Target Frame: <Fixed Frame>
-      X: 2.4353890419006348
-      Y: -0.35890650749206543
+      X: 0
+      Y: 0
     Saved: ~
 Window Geometry:
   Displays:

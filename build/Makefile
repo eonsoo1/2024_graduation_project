@@ -545,6 +545,19 @@ GPS_node/fast:
 .PHONY : GPS_node/fast
 
 #=============================================================================
+# Target rules for targets named IMU_node
+
+# Build rule for target.
+IMU_node: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 IMU_node
+.PHONY : IMU_node
+
+# fast build rule for target.
+IMU_node/fast:
+	$(MAKE) -f Localization/localization/CMakeFiles/IMU_node.dir/build.make Localization/localization/CMakeFiles/IMU_node.dir/build
+.PHONY : IMU_node/fast
+
+#=============================================================================
 # Target rules for targets named localization_generate_messages_py
 
 # Build rule for target.
@@ -569,19 +582,6 @@ localization_gennodejs: cmake_check_build_system
 localization_gennodejs/fast:
 	$(MAKE) -f Localization/localization/CMakeFiles/localization_gennodejs.dir/build.make Localization/localization/CMakeFiles/localization_gennodejs.dir/build
 .PHONY : localization_gennodejs/fast
-
-#=============================================================================
-# Target rules for targets named imu_deadreckoning
-
-# Build rule for target.
-imu_deadreckoning: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 imu_deadreckoning
-.PHONY : imu_deadreckoning
-
-# fast build rule for target.
-imu_deadreckoning/fast:
-	$(MAKE) -f Localization/localization/CMakeFiles/imu_deadreckoning.dir/build.make Localization/localization/CMakeFiles/imu_deadreckoning.dir/build
-.PHONY : imu_deadreckoning/fast
 
 #=============================================================================
 # Target rules for targets named localization_generate_messages_nodejs
@@ -2666,9 +2666,9 @@ help:
 	@echo "... rtcm_msgs_generate_messages_py"
 	@echo "... EKF_node"
 	@echo "... GPS_node"
+	@echo "... IMU_node"
 	@echo "... localization_generate_messages_py"
 	@echo "... localization_gennodejs"
-	@echo "... imu_deadreckoning"
 	@echo "... localization_generate_messages_nodejs"
 	@echo "... localization_genlisp"
 	@echo "... rosgraph_msgs_generate_messages_nodejs"

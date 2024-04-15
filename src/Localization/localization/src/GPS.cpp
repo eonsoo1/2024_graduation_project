@@ -5,6 +5,9 @@ GPS::GPS(){
     marker_pub = nh.advertise<visualization_msgs::Marker>("/gps_path", 1000);
     gps_sub = nh.subscribe("/ublox_gps/fix", 1000, &GPS::GPSCallback, this);
     gps_bool = false;
+    m_lat = 0;
+    m_lon = 0;
+    m_alt = 0;
     // m_origin = lanelet::Origin({ORIGIN_LAT, ORIGIN_LON}); // 삼각지 기준 rviz mapping
  }
 
@@ -13,7 +16,7 @@ void GPS::GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg){
     m_lat = gps_data_msg->latitude;
     m_lon = gps_data_msg->longitude;
     m_alt = gps_data_msg->altitude;  
-
+    
     // 시작점 기준 rviz mapping
     if(!gps_bool){
         m_origin = lanelet::Origin({m_lat, m_lon});

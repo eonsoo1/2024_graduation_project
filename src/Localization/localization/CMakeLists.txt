@@ -55,9 +55,9 @@ find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
 
-add_executable(imu_deadreckoning src/imu_deadreckoning.cpp)
-add_dependencies(imu_deadreckoning  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(imu_deadreckoning ${catkin_LIBRARIES})
+add_executable(IMU_node src/IMU.cpp)
+add_dependencies(IMU_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(IMU_node ${catkin_LIBRARIES})
 
 
 add_executable(GPS_node src/GPS.cpp)

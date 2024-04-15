@@ -60,7 +60,8 @@ class Deadreckoning{
         ros::Time time;
 
         tf::TransformBroadcaster tfcaster;
-
+        tf::Transform transform;
+        tf::Quaternion q1;
         // std_msgs::Float32 velocity_x;
         // std_msgs::Float32 velocity_y;
         // std_msgs::Float32 velocity_z;

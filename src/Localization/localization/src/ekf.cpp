@@ -33,7 +33,7 @@
 
 #define INITIAL_YAW 0.0
 #define N           3  
-#define M           3 
+#define M           2 
 using namespace std;
 
 
@@ -50,9 +50,11 @@ class EKF{
         double m_gps_y_covariance;
         double m_velocity_ms;        
 
-     
         double m_utm_x;
         double m_utm_y;
+        double m_utm_yaw;
+        double m_prev_utm_x;
+        double m_prev_utm_y;
 
         double m_imu_x;
         double m_imu_y;
@@ -71,13 +73,9 @@ class EKF{
         bool gps_velocity_sub_bool;
         bool utm_sub_bool;
         bool imu_sub_bool;
-            
-  
 
         Eigen::MatrixXd m_P_post, m_P_prior, A_jacb, H_jacb, Q_noise_cov, R_noise_cov, K_gain;
         Eigen::VectorXd m_x_post, m_x_prior, m_z_measured;
-
-
 
     public:
         EKF();
@@ -87,11 +85,12 @@ class EKF{
         void UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg);
         void IMUCallback(const localization::PoseMsg::ConstPtr& imu_data_msg);
         void ExtendKalmanFileter();
+        void Pub();
         Eigen::VectorXd EstimatedModel(Eigen::VectorXd& estimated_input);
         Eigen::VectorXd MeasurementModel(Eigen::VectorXd& measured_input);
 };
 
-EKF::EKF() : m_P_post(N, N), m_P_prior(N, N), A_jacb(N, N), H_jacb(M, M), Q_noise_cov(N, N), K_gain(N, N), R_noise_cov(M, M),
+EKF::EKF() : m_P_post(N, N), m_P_prior(N, N), A_jacb(N, N), H_jacb(N, M), Q_noise_cov(N, N), K_gain(M, N), R_noise_cov(M, M),
              m_x_post(N), m_x_prior(N), m_z_measured(M){
 
     gps_sub = nh.subscribe("/ublox_gps/fix", 1000, &EKF::GPSCallback, this);
@@ -115,13 +114,15 @@ void EKF::GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg){
     gps_sub_bool = true;
 
 };
+
 void EKF::GPSVelCallback(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr& gps_velocity_msg){
     
     // 홀센서 데이터로 수정 예정
     m_velocity_ms = sqrt(pow(gps_velocity_msg->twist.twist.linear.x, 2) + pow(gps_velocity_msg->twist.twist.linear.y, 2));
     
     gps_velocity_sub_bool = true;
-}
+};
+
 void EKF::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg){
     
     m_utm_x = utm_data_msg->x;
@@ -151,19 +152,19 @@ Eigen::VectorXd EKF::EstimatedModel(Eigen::VectorXd& estimated_input){
 
     return fk;
 
-}
+};
 
 Eigen::VectorXd EKF::MeasurementModel(Eigen::VectorXd& measured_input){
 
-    Eigen::VectorXd hk(N);
-   
+    Eigen::VectorXd hk(M);
+    
+    //gps의 yaw는 없다고 가정하여 계산
     hk << (measured_input(0)),
-          (measured_input(1)),
-          (measured_input(2));
-
+          (measured_input(1));
+    
     return hk;
 
-}
+};
 
 void EKF::ExtendKalmanFileter(){
     
@@ -173,9 +174,9 @@ void EKF::ExtendKalmanFileter(){
         m_x_prior(1) = m_utm_y;
         m_x_prior(2) = m_init_yaw;
 
-        m_P_post << 1000, 0    ,0,
-                          0,    1000 ,0,
-                          0,    0    ,1000;
+        m_P_post << 1000, 0,    0,
+                    0,    1000, 0,
+                    0,    0,    1000;
 
         init_bool = true;
          
@@ -183,14 +184,13 @@ void EKF::ExtendKalmanFileter(){
     else{
         
         //예측 시스템 모델의 자코비안(시스템 모델을 각 변수로 미분한 행렬)
-        A_jacb << 1, 0, - m_x_post(2) * m_velocity_ms * m_dt * sin(m_x_post(2)),
-                      0, 1, m_x_post(2) * m_velocity_ms * m_dt * cos(m_x_post(2)),
-                      0, 0, 1;
+        A_jacb << 1, 0, - 1 * m_velocity_ms * m_dt * sin(m_x_post(2)),
+                  0, 1, 1 * m_velocity_ms * m_dt * cos(m_x_post(2)),
+                  0, 0, 1;
         
         //측정 시스템 모델의 자코비안
         H_jacb << 1, 0, 0,
-                  0, 1, 0,
-                  0, 0, 1;
+                  0, 1, 0;
         
          // prediction 공분산 예시
         Q_noise_cov <<  0.00001, 0.0,     0.0,             
@@ -198,19 +198,18 @@ void EKF::ExtendKalmanFileter(){
                         0.0,     0.0,     0.00001;          // 직접 센서를 움직여본 후 공분산 구할 것
         
         // measerment 공분산
-        R_noise_cov << m_gps_x_covariance, 0, 0,
+        R_noise_cov << m_gps_x_covariance, 0,                  0,
                        0,                  m_gps_y_covariance, 0,
-                       0,                  0,                  0.00001; // gps yaw의 covariance는 어떻게?
+                       0,                  0,                  0; // gps yaw의 covariance는 어떻게? -> gps yaw를 고려안한다면 오차 공분산 = 0
 
         // measurement value
-        m_z_measured << m_utm_x, 0, 0,
-                        0,       m_utm_y, 0,
-                        0,       0,       0;    // gps yaw는 어떻게?
+        m_z_measured << m_utm_x, 0,       0,
+                        0,       m_utm_y, 0;    // gps yaw는 어떻게?
                         
         if(imu_sub_bool){
             
             //1. 추정값과 오차 공분산 예측
-            m_x_prior = EstimatedModel(m_x_prior);
+            m_x_prior = EstimatedModel(m_x_post);
             m_P_prior = A_jacb * m_P_post * A_jacb.transpose() + Q_noise_cov;
             
             //2. 칼만 이득 계산
@@ -228,6 +227,14 @@ void EKF::ExtendKalmanFileter(){
 
 }
 
+void EKF::Pub(){
+
+    cout << "EKF X : " << m_x_post(0) << endl;
+    cout << "EKF Y : " << m_x_post(1) << endl;
+    cout << "EKF Yaw : " << m_x_post(2) << endl;
+
+}
+
 
 int main(int argc, char **argv){
 
@@ -236,7 +243,8 @@ int main(int argc, char **argv){
     ros::Rate loop_rate(100);
 
     while(ros::ok()){
-
+        
+        ekf.Pub();
         ros::spinOnce();
         loop_rate.sleep();
 
