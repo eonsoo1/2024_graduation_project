@@ -110,7 +110,7 @@ class Deadreckoning{
         void IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg, 
                                     const geometry_msgs::Vector3 &accel_msg);
         void Pub();
-        void CalcOrientation(const geometry_msgs::Quaternion &msg);
+        double CalcOrientation(const geometry_msgs::Quaternion &msg);
         void CollectCalibrationData(std::vector<geometry_msgs::Vector3>& calibration_data, const geometry_msgs::Vector3& msg);
         void CalibrateSensor(const std::vector<geometry_msgs::Vector3>& calibration_data,
                             geometry_msgs::Vector3& calibration_offsets);

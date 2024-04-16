@@ -22,6 +22,7 @@
         "vector": "cpp",
         "chrono": "cpp",
         "thread": "cpp",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "cmath": "cpp"
     }
 }

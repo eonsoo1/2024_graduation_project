@@ -60,8 +60,9 @@ void Deadreckoning::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_coord_
         m_utm_y = utm_coord_msg->y;
         double distance;
         distance = sqrt(pow((m_utm_x - m_origin_x), 2) + pow((m_utm_y - m_origin_y), 2));
-        if(distance > 0.1 && !m_gps_yaw_trigger){
+        if(distance > 2.0 && !m_gps_yaw_trigger){//0.1
             m_gps_yaw = atan2((m_utm_y - m_origin_y), (m_utm_x - m_origin_x));
+            m_init_yaw = m_gps_yaw; 
             m_gps_yaw_trigger = true;
         }
     }
@@ -78,11 +79,11 @@ void Deadreckoning::GPSVelocityCallback(const geometry_msgs::TwistWithCovariance
 }
 
 void Deadreckoning::ImuCallback(const sensor_msgs::Imu::ConstPtr& imu_data_msg){
-    if(m_utm_bool && m_gps_vel_bool){
+    if(m_utm_bool && m_gps_yaw_trigger){ //gps_vel_bool -> gps_yaw_trigger
         m_delta_time = 0.01;
         
         //초기값 설정 단계
-        if (initial_time) {
+        if(initial_time) {
             if(m_dVehicleVel_ms < 0.1){
                     auto current_time = chrono::steady_clock::now();
                     auto elapsed_time = chrono::duration_cast<chrono::seconds>(current_time - start_time).count();
@@ -102,7 +103,7 @@ void Deadreckoning::ImuCallback(const sensor_msgs::Imu::ConstPtr& imu_data_msg){
             } 
         }
         //초기값 설정 이후 
-        else if(m_gps_yaw_trigger){
+        else{
             IMUDeadReckoning(imu_data_msg->angular_velocity,imu_data_msg->linear_acceleration);
             Pub();
         }
@@ -152,9 +153,10 @@ void Deadreckoning::Pub(){
     z_calibration_velocity_pub.publish(calib_velocity_z);
 };
 
-void Deadreckoning::CalcOrientation(const geometry_msgs::Quaternion &msg){
+double Deadreckoning::CalcOrientation(const geometry_msgs::Quaternion &msg){
     orientation = msg;
     double roll, pitch, yaw;
+    double init_yaw;
     tf::Quaternion odom_quat(
         orientation.x,
         orientation.y,
@@ -164,7 +166,8 @@ void Deadreckoning::CalcOrientation(const geometry_msgs::Quaternion &msg){
     tf::Matrix3x3 m(odom_quat);
     m.getRPY(roll, pitch, yaw);
    
-    m_imu_yaw = yaw * 180 / M_PI;
+    init_yaw = yaw * 180 / M_PI;
+    return init_yaw;
 
 }
 
