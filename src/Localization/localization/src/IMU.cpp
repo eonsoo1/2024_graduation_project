@@ -13,6 +13,7 @@ Deadreckoning::Deadreckoning(){
     m_utm_bool = false;
     m_gps_vel_bool = false;
     m_gps_yaw_trigger = false;
+    initial_time = true;  
     m_prev_velocity = 0;
     nh.param("init_yaw", m_init_yaw, INITIAL_YAW);
 };
@@ -60,9 +61,8 @@ void Deadreckoning::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_coord_
         m_utm_y = utm_coord_msg->y;
         double distance;
         distance = sqrt(pow((m_utm_x - m_origin_x), 2) + pow((m_utm_y - m_origin_y), 2));
-        if(distance > 2.0 && !m_gps_yaw_trigger){//0.1
+        if(m_dVehicleVel_ms > 0.1 && distance > 3.0 && !m_gps_yaw_trigger){//0.1
             m_gps_yaw = atan2((m_utm_y - m_origin_y), (m_utm_x - m_origin_x));
-            m_init_yaw = m_gps_yaw; 
             m_gps_yaw_trigger = true;
         }
     }
@@ -85,10 +85,10 @@ void Deadreckoning::ImuCallback(const sensor_msgs::Imu::ConstPtr& imu_data_msg){
         //초기값 설정 단계
         if(initial_time) {
             if(m_dVehicleVel_ms < 0.1){
-                    auto current_time = chrono::steady_clock::now();
-                    auto elapsed_time = chrono::duration_cast<chrono::seconds>(current_time - start_time).count();
+                    // auto current_time = chrono::steady_clock::now();
+                    // auto elapsed_time = chrono::duration_cast<chrono::seconds>(current_time - start_time).count();
                     cout << "--------------------" << endl;
-                    cout << "데이터 수집 중 : " << elapsed_time << "초"<< endl;
+                    // cout << "데이터 수집 중 : " << elapsed_time << "초"<< endl;
                     CollectCalibrationData(calibration_velocity_data, imu_data_msg->angular_velocity);
             }
             else {
@@ -149,7 +149,7 @@ void Deadreckoning::Pub(){
     imu_pose.yaw_rate = m_yaw_rate;
 
     imu_pose_pub.publish(imu_pose);
-    marker_pub.publish(imu_path);
+    // marker_pub.publish(imu_path);
     z_calibration_velocity_pub.publish(calib_velocity_z);
 };
 
@@ -201,12 +201,16 @@ void Deadreckoning::IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg,
         cout << "IMU Y : " << m_imu_y << endl;
         m_imu_y = 0;
     }
+
     Eigen::VectorXd p_before(2), p_after(2);
     Eigen::MatrixXd R(2,2);
+    
     p_before << m_imu_x, 
                 m_imu_y;
+    
     R << cos(m_gps_yaw), -sin(m_gps_yaw),
         sin(m_gps_yaw), cos(m_gps_yaw);
+    
     p_after = R * p_before;
 
     p.x = p_after(0);
@@ -228,8 +232,6 @@ void Deadreckoning::IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg,
     q1.setRPY(0, 0, 0);
     transform.setRotation(q1);
     tfcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "imu_frame"));
-
-
     imu_path.points.push_back(p);
 
 }

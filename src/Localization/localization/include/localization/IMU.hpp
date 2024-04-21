@@ -95,7 +95,7 @@ class Deadreckoning{
         double m_prev_utm_y = 0;
         double m_gps_yaw;
 
-        bool initial_time = true;
+        bool initial_time;
         bool m_utm_bool;
         bool m_gps_vel_bool;
         

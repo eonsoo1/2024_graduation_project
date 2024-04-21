@@ -68,7 +68,7 @@ void GPS::GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg){
     gps_path.points.push_back(m_utm_coord); // 점 추가
 
     // 발행된 marker를 rviz에 표시합니다.
-    marker_pub.publish(gps_path);
+    // marker_pub.publish(gps_path);
     utm_pub.publish(m_utm_coord);
 }
 
@@ -90,7 +90,7 @@ int main(int argc, char **argv){
     
     GPS gps;
  
-    ros::Rate loop_rate(8);
+    ros::Rate loop_rate(100);
     while(ros::ok()){
 
         gps.Print();

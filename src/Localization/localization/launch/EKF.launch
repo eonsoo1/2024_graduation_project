@@ -1,7 +1,7 @@
 <launch>
-  <arg name="m_init_yaw" default="3.0"/>
+  <!-- <arg name="m_init_yaw" default="3.0"/> -->
 
     <node pkg="localization" type="EKF_node" name="EKF_node"  output="screen">
   </node>
-        <param name="init_yaw" type="double" value="$(arg m_init_yaw)" />
+        <!-- <param name="init_yaw" type="double" value="$(arg m_init_yaw)" /> -->
 </launch>
