@@ -149,7 +149,7 @@ void Deadreckoning::Pub(){
     imu_pose.yaw_rate = m_yaw_rate;
 
     imu_pose_pub.publish(imu_pose);
-    // marker_pub.publish(imu_path);
+    marker_pub.publish(imu_path);
     z_calibration_velocity_pub.publish(calib_velocity_z);
 };
 

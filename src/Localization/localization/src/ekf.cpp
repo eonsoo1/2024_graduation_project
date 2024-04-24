@@ -10,11 +10,14 @@
 #include <visualization_msgs/MarkerArray.h>
 
 #include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/Quaternion.h>
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/TwistWithCovarianceStamped.h>
 
 #include <tf/transform_broadcaster.h>
+#include <nav_msgs/Path.h>
+#include <nav_msgs/Odometry.h>
 
 #include <std_msgs/Float32.h>
 #include <Eigen/Dense>
@@ -31,7 +34,7 @@
 
 #define INITIAL_YAW 81.3
 #define N           3  
-#define M           3 
+#define M           2 
 
 using namespace std;
 
@@ -52,9 +55,9 @@ class EKF{
         ros::Publisher utm_path_pub;
         ros::Publisher imu_path_pub;
         ros::Publisher ekf_path_pub;
-        ros::Publisher utm_point_pub;
-        ros::Publisher imu_point_pub;
-        ros::Publisher ekf_point_pub;
+        ros::Publisher ekf_pose_pub;
+        ros::Publisher imu_pose_pub;
+        ros::Publisher utm_pose_pub;
 
         double m_gps_x_covariance;
         double m_gps_y_covariance;
@@ -79,12 +82,17 @@ class EKF{
         bool m_utm_sub_bool;
         bool m_imu_sub_bool;
 
-        visualization_msgs::Marker utm_path;
-        visualization_msgs::Marker imu_path;
-        visualization_msgs::Marker ekf_path;
+        nav_msgs::Path m_utm_path;
+        nav_msgs::Path m_imu_path;
+        nav_msgs::Path m_ekf_path;
+        nav_msgs::Odometry m_ekf_odom;
+        nav_msgs::Odometry m_imu_odom;
+        nav_msgs::Odometry m_utm_odom;
+        
         geometry_msgs::Point p_e;
         geometry_msgs::Point p_i;       
-        geometry_msgs::Point p_u;              
+        geometry_msgs::Point p_u;
+
         tf::TransformBroadcaster tfcaster_ekf;
         tf::Transform transform_ekf;
         tf::Quaternion q_e;
@@ -125,13 +133,14 @@ EKF::EKF() : m_P_post(N, N), m_P_prior(N, N), A_jacb(N, N), H_jacb(M, N), Q_nois
     utm_sub = nh.subscribe("/utm_coord", 1000, &EKF::UTMCallback, this);
     imu_sub = nh.subscribe("/imu_pose", 1000, &EKF::IMUCallback, this);
     
-    ekf_path_pub = nh.advertise<visualization_msgs::Marker>("/EKF_path", 1000);
-    imu_path_pub = nh.advertise<visualization_msgs::Marker>("/IMU_path", 1000);
-    utm_path_pub = nh.advertise<visualization_msgs::Marker>("/UTM_path", 1000);
+    ekf_path_pub = nh.advertise<nav_msgs::Path>("/EKF_path", 1000);
+    imu_path_pub = nh.advertise<nav_msgs::Path>("/IMU_path", 1000);
+    utm_path_pub = nh.advertise<nav_msgs::Path>("/UTM_path", 1000);
 
-    ekf_point_pub = nh.advertise<geometry_msgs::Point>("/EKF_point", 1000);
-    imu_point_pub = nh.advertise<geometry_msgs::Point>("/IMU_point", 1000);
-    utm_point_pub = nh.advertise<geometry_msgs::Point>("/UTM_point", 1000);
+    ekf_pose_pub = nh.advertise<nav_msgs::Odometry>("/EKF_odom", 1000);
+    imu_pose_pub = nh.advertise<nav_msgs::Odometry>("/IMU_odom", 1000);
+    utm_pose_pub = nh.advertise<nav_msgs::Odometry>("/UTM_odom", 1000);
+
 
     m_init_bool = false;
     m_gps_sub_bool = false;
@@ -150,8 +159,9 @@ EKF::EKF() : m_P_post(N, N), m_P_prior(N, N), A_jacb(N, N), H_jacb(M, N), Q_nois
 
 void EKF::GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg){
   
-    m_gps_x_covariance = gps_data_msg->position_covariance[0]; //1행 1열 x covariance
-    m_gps_y_covariance = gps_data_msg->position_covariance[4]; //2행 2열 y covariance
+    m_gps_x_covariance = gps_data_msg->position_covariance[0]; //1행 1열 x covariance (m 단위)
+    m_gps_y_covariance = gps_data_msg->position_covariance[4]; //2행 2열 y covariance (m 단위)
+   
     m_gps_sub_bool = true;
 
 };
@@ -159,7 +169,7 @@ void EKF::GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg){
 void EKF::GPSVelCallback(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr& gps_velocity_msg){
     
     // 홀센서 데이터로 수정 예정
-    m_velocity_ms = sqrt(pow(gps_velocity_msg->twist.twist.linear.x, 2) + pow(gps_velocity_msg->twist.twist.linear.y, 2));
+    m_velocity_ms = sqrt(pow(gps_velocity_msg->twist.twist.linear.x, 2) + pow(gps_velocity_msg->twist.twist.linear.y, 2)); // (m/s 단위)
     m_gps_velocity_sub_bool = true;
 };
 
@@ -168,6 +178,7 @@ void EKF::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg){
     if(!m_utm_bool){
         m_utm.x = utm_data_msg->x;
         m_utm.y = utm_data_msg->y;
+        
         m_init.x = m_utm.x;
         m_init.y = m_utm.y;
         m_prev_utm_x = m_utm.x;
@@ -186,8 +197,6 @@ void EKF::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg){
             else{
             m_utm_update_bool = false;
         }
-    
-       
         double distance;
         distance = sqrt(pow((m_utm.x - m_init.x), 2) + pow((m_utm.y - m_init.y), 2));
         if(m_velocity_ms > 0.1 && distance > 3.0 && !m_utm_yaw_trigger){//0.1
@@ -204,9 +213,9 @@ void EKF::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg){
 
 void EKF::IMUCallback(const localization::PoseMsg::ConstPtr& imu_data_msg){
     
-    m_imu.x = imu_data_msg->pose_x;
-    m_imu.y = imu_data_msg->pose_y;
-    m_imu.yaw = imu_data_msg->pose_yaw;
+    // m_imu.x = imu_data_msg->pose_x;
+    // m_imu.y = imu_data_msg->pose_y;
+    // m_imu.yaw = imu_data_msg->pose_yaw;
     m_yaw_rate = imu_data_msg->yaw_rate;
     m_imu_sub_bool = true;
 
@@ -245,18 +254,21 @@ Eigen::VectorXd EKF::MeasurementModel(Eigen::VectorXd& measured_input){
 
     Eigen::VectorXd hk(M);
     
-    //gps의 yaw는 없다고 가정하여 계산
+    //gps의 yaw를 고려하지 않고 계산
     hk << (measured_input(0)),
-          (measured_input(1)),
-          (measured_input(2));
-    
+          (measured_input(1));
+          
+    //gps의 yaw를 고려하고 계산
+    // hk << (measured_input(0)),
+    //       (measured_input(1)),
+    //       (measured_input(2));
+        
     return hk;
 
 };
 
 void EKF::ExtendKalmanFilter(){
     if(m_utm_yaw_trigger){
-
    
         if(!m_init_bool){
         
@@ -283,29 +295,37 @@ void EKF::ExtendKalmanFilter(){
                     0, 0, 1;
             //측정 시스템 모델의 자코비안
             H_jacb << 1, 0, 0,
-                    0, 1, 0,
-                    0, 0, 1;
-            // prediction 공분산 예시
-            Q_noise_cov <<  0.000001,  0.0,     0.0,             
-                            0.0,     0.000001, 0.0,              // 센서 오차 감안 (휴리스틱)
-                            0.0,     0.0,     0.000001;          // 직접 센서를 움직여본 후 공분산 구할 것
-            // measerment 공분산
-            R_noise_cov << m_gps_x_covariance,  0,                   0,
-                           0,                   m_gps_y_covariance, 0,
-                           0,                   0,                  1;
-            // Q_noise_cov <<  0.01,     0.0,   0.0,             
-            //                 0.0,   0.01,     0.0,              // 센서 오차 감안 (휴리스틱)
-            //                 0.0,   0.0,   0.01;          // 직접 센서를 움직여본 후 공분산 구할 것
-            // // measerment 공분산
-            // R_noise_cov << 1,  0,   0,
-            //                 0,  1,   0,
-            //                 0,  0,   1;
-                        // gps yaw의 covariance는 어떻게? -> gps yaw를 고려안한다면 오차 공분산 = X
-            // measurement value
-            m_z_measured << m_utm.x,
-                            m_utm.y,
-                            m_utm.yaw;    // gps yaw는 어떻게?
+                      0, 1, 0;
 
+            //gps yaw를 고려한 자코비안
+            // H_jacb << 1, 0, 0,
+            //         0, 1, 0,
+            //         0, 0, 1;
+
+            // prediction 공분산 예시
+            Q_noise_cov <<  0.000005,  0.0,     0.0,             
+                            0.0,     0.000005, 0.0,              // 센서 오차 감안 (휴리스틱)
+                            0.0,     0.0,     0.00005;          // 직접 센서를 움직여본 후 공분산 구할 것
+            
+            
+            // gps yaw를 고려하지 않은 measerment 공분산
+            R_noise_cov << m_gps_x_covariance,  0,                
+                           0,                   m_gps_y_covariance;
+        
+            // gps yaw를 고려하지 않은 measurement value
+            m_z_measured << m_utm.x,
+                            m_utm.y;
+   
+
+            // gps yaw를 고려한 measerment 공분산               
+            // R_noise_cov << m_gps_x_covariance,  0,                   0,
+            //                0,                   m_gps_y_covariance, 0,
+            //                0,                   0,                  1;
+            
+            //gps yaw를 고려한 measerment value
+            // m_z_measured << m_utm.x,
+            //                 m_utm.y,
+            //                 m_utm.yaw; 
 
             // if(m_imu_sub_bool){
 
@@ -336,11 +356,12 @@ void EKF::Pub(){
 
     cout << "----------------" << endl;
     cout << "GPS(utm) update bool : " << m_utm_update_bool << endl;
+    
 
     cout << "-----------" << endl;
     cout << "GPS(utm) X : " << m_z_measured(0) << endl;
     cout << "GPS(utm) Y : " << m_z_measured(1) << endl;
-    cout << "GPS(utm) Yaw : " << m_z_measured(2) * 180 / M_PI << endl;
+    // cout << "GPS(utm) Yaw : " << m_z_measured(2) * 180 / M_PI << endl;
     
     cout << "-----------" << endl;
     cout << "IMU DR X : " << m_x_prior(0) << endl;
@@ -350,108 +371,118 @@ void EKF::Pub(){
     cout << "EKF X : " << m_x_post(0) << endl;
     cout << "EKF Y : " << m_x_post(1) << endl;
     cout << "EKF Yaw : " << m_x_post(2) * 180 / M_PI << endl;
-
+   
     EKFPathVisualize();
     IMUPathVisualize();
     UTMPathVisualize();
+    
 }
 
 void EKF::EKFPathVisualize(){
-    ekf_path.header.frame_id = "world"; // Set the frame id
-    ekf_path.header.stamp = ros::Time::now();
-    ekf_path.ns = "line_strip";
-    ekf_path.action = visualization_msgs::Marker::ADD;
-    ekf_path.type = visualization_msgs::Marker::LINE_STRIP;
-    ekf_path.pose.orientation.x = 0;
-    ekf_path.pose.orientation.y = 0;
-    ekf_path.pose.orientation.z = 0;
-    ekf_path.pose.orientation.w = 1.0;
-    ekf_path.scale.x = 0.3; // Line width
 
-    // Set the marker color (RGBA)
-    ekf_path.color.r = 0.4;
-    ekf_path.color.g = 0.7;
-    ekf_path.color.b = 0.0;
-    ekf_path.color.a = 1.0;
+    // Path Line visualiazation
+    geometry_msgs::PoseStamped ekf_pose;
+    
+    m_ekf_odom.header.frame_id = "world"; // Set the frame id
+    m_ekf_odom.header.stamp = ros::Time::now();
+
+    m_ekf_path.header.frame_id = "world"; // Set the frame id
+    m_ekf_path.header.stamp = ros::Time::now();
+
     p_e.x = m_x_post(0);
     p_e.y = m_x_post(1);
     p_e.z = 0;
+    
+    ekf_pose.pose.position = p_e;
+    ekf_pose.pose.orientation.w = 1;
+
+    m_ekf_path.poses.push_back(ekf_pose);    
+    
+    ekf_path_pub.publish(m_ekf_path);
 
     transform_ekf.setOrigin(tf::Vector3(p_e.x, p_e.y, 0.0));
-    q_e.setRPY(0, 0, 0);
+    q_e.setRPY(0, 0, m_x_post(2));
     transform_ekf.setRotation(q_e);
     tfcaster_ekf.sendTransform(tf::StampedTransform(transform_ekf, ros::Time::now(), "world", "EKF_frame"));
+    
+    m_ekf_odom.pose.pose.position = p_e;
+    m_ekf_odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(m_x_post(2));
+    
+    ekf_pose_pub.publish(m_ekf_odom);
 
-    ekf_path.points.push_back(p_e);
-    ekf_point_pub.publish(p_e);
-    ekf_path_pub.publish(ekf_path);
+
+
 
 };
 
 
 void EKF::IMUPathVisualize(){
-   
-    imu_path.header.frame_id = "world"; // Set the frame id
-    imu_path.header.stamp = ros::Time::now();
-    imu_path.ns = "line_strip";
-    imu_path.action = visualization_msgs::Marker::ADD;
-    imu_path.type = visualization_msgs::Marker::LINE_STRIP;
-    imu_path.pose.orientation.x = 0;
-    imu_path.pose.orientation.y = 0;
-    imu_path.pose.orientation.z = 0;
-    imu_path.pose.orientation.w = 1.0;
-    imu_path.scale.x = 0.3; // Line width
+     // Path Line visualiazation
+    geometry_msgs::PoseStamped imu_pose;
+    
+    m_imu_odom.header.frame_id = "world"; // Set the frame id
+    m_imu_odom.header.stamp = ros::Time::now();
 
-    // Set the marker color (RGBA)
-    imu_path.color.r = 0.0;
-    imu_path.color.g = 0.0;
-    imu_path.color.b = 1.0;
-    imu_path.color.a = 1.0;
+    m_imu_path.header.frame_id = "world"; // Set the frame id
+    m_imu_path.header.stamp = ros::Time::now();
+
     p_i.x = m_x_prior(0);
     p_i.y = m_x_prior(1);
     p_i.z = 0;
+    
+    imu_pose.pose.position = p_i;
+    imu_pose.pose.orientation.w = 1;
+
+    m_imu_path.poses.push_back(imu_pose);    
+    
+    imu_path_pub.publish(m_imu_path);
 
     transform_imu.setOrigin(tf::Vector3(p_i.x, p_i.y, 0.0));
-    q_i.setRPY(0, 0, 0);
-    transform_imu.setRotation(q_i);
+    q_e.setRPY(0, 0, m_x_prior(2));
+    transform_imu.setRotation(q_e);
     tfcaster_imu.sendTransform(tf::StampedTransform(transform_imu, ros::Time::now(), "world", "IMU_frame"));
+    
+    m_imu_odom.pose.pose.position = p_i;
+    m_imu_odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(m_x_prior(2));
+    
+    imu_pose_pub.publish(m_imu_odom);
 
-    imu_path.points.push_back(p_i);
-    imu_point_pub.publish(p_i);
-    imu_path_pub.publish(imu_path);
 
 }; 
 
 
 void EKF::UTMPathVisualize(){
-    utm_path.header.frame_id = "world"; // Set the frame id
-    utm_path.header.stamp = ros::Time::now();
-    utm_path.ns = "line_strip";
-    utm_path.action = visualization_msgs::Marker::ADD;
-    utm_path.type = visualization_msgs::Marker::LINE_STRIP;
-    utm_path.pose.orientation.x = 0;
-    utm_path.pose.orientation.y = 0;
-    utm_path.pose.orientation.z = 0;
-    utm_path.pose.orientation.w = 1.0;
-    utm_path.scale.x = 0.3; // Line width
+      // Path Line visualiazation
+    geometry_msgs::PoseStamped utm_pose;
+    
+    m_utm_odom.header.frame_id = "world"; // Set the frame id
+    m_utm_odom.header.stamp = ros::Time::now();
 
-    // Set the marker color (RGBA)
-    utm_path.color.r = 1.0;
-    utm_path.color.g = 0.0;
-    utm_path.color.b = 0.0;
-    utm_path.color.a = 1.0;
+    m_utm_path.header.frame_id = "world"; // Set the frame id
+    m_utm_path.header.stamp = ros::Time::now();
+
     p_u.x = m_z_measured(0);
     p_u.y = m_z_measured(1);
     p_u.z = 0;
+    
+    utm_pose.pose.position = p_u;
+    utm_pose.pose.orientation.w = 1;
+
+    m_utm_path.poses.push_back(utm_pose);    
+    
+    utm_path_pub.publish(m_utm_path);
 
     transform_utm.setOrigin(tf::Vector3(p_u.x, p_u.y, 0.0));
-    q_u.setRPY(0, 0, 0);
-    transform_utm.setRotation(q_u);
-    tfcaster_utm.sendTransform(tf::StampedTransform(transform_utm, ros::Time::now(), "world", "UTM_frame"));
+    q_e.setRPY(0, 0, m_utm.yaw);
+    transform_utm.setRotation(q_e);
+    tfcaster_utm.sendTransform(tf::StampedTransform(transform_utm, ros::Time::now(), "world", "GPS_frame"));
+    
+    m_utm_odom.pose.pose.position = p_u;
+    m_utm_odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(m_utm.yaw);
+    
+    utm_pose_pub.publish(m_utm_odom);
 
-    utm_path.points.push_back(p_u);
-    utm_point_pub.publish(p_u);
-    utm_path_pub.publish(utm_path);
+
 
 };
 
@@ -460,7 +491,7 @@ int main(int argc, char **argv){
 
     ros::init(argc, argv, "EKF_node");
     EKF ekf;
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(50);
 
     while(ros::ok()){
         ekf.ExtendKalmanFilter();

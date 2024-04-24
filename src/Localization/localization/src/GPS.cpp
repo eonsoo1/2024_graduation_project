@@ -90,7 +90,7 @@ int main(int argc, char **argv){
     
     GPS gps;
  
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(8);
     while(ros::ok()){
 
         gps.Print();
