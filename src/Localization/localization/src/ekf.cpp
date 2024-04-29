@@ -71,7 +71,7 @@ class EKF{
         Pose m_ekf;
         Pose m_init;
         
-        double m_dt = 0.01;
+        
 
         bool m_init_bool;
         bool m_utm_bool;
@@ -123,6 +123,7 @@ class EKF{
 
         Eigen::VectorXd EstimatedModel(Eigen::VectorXd& estimated_input);
         Eigen::VectorXd MeasurementModel(Eigen::VectorXd& measured_input);
+        double m_dt = 0.0125;
 };
 
 EKF::EKF() : m_P_post(N, N), m_P_prior(N, N), A_jacb(N, N), H_jacb(M, N), Q_noise_cov(N, N), K_gain(N, M), R_noise_cov(M, M),
@@ -141,7 +142,7 @@ EKF::EKF() : m_P_post(N, N), m_P_prior(N, N), A_jacb(N, N), H_jacb(M, N), Q_nois
     imu_pose_pub = nh.advertise<nav_msgs::Odometry>("/IMU_odom", 1000);
     utm_pose_pub = nh.advertise<nav_msgs::Odometry>("/UTM_odom", 1000);
 
-
+    
     m_init_bool = false;
     m_gps_sub_bool = false;
     m_gps_velocity_sub_bool = false;
@@ -303,9 +304,9 @@ void EKF::ExtendKalmanFilter(){
             //         0, 0, 1;
 
             // prediction 공분산 예시
-            Q_noise_cov <<  0.000005,  0.0,     0.0,             
-                            0.0,     0.000005, 0.0,              // 센서 오차 감안 (휴리스틱)
-                            0.0,     0.0,     0.00005;          // 직접 센서를 움직여본 후 공분산 구할 것
+            Q_noise_cov <<  0.000000005,  0.0,     0.0,             
+                            0.0,     0.000000005, 0.0,              // 센서 오차 감안 (휴리스틱)
+                            0.0,     0.0,     0.000000005;          // 직접 센서를 움직여본 후 공분산 구할 것
             
             
             // gps yaw를 고려하지 않은 measerment 공분산
@@ -332,6 +333,8 @@ void EKF::ExtendKalmanFilter(){
                 //1. 추정값과 오차 공분산 예측
                 m_x_prior = EstimatedModel(m_x_post);
                 m_P_prior = A_jacb * m_P_post * A_jacb.transpose() + Q_noise_cov;
+                cout << "-----------Q noise----------- \n" <<
+                         Q_noise_cov << endl;
                 // measure 값이 들어왔을 때 ekf 실행
                 m_x_post = m_x_prior;
                 m_P_post = m_P_prior;
@@ -409,8 +412,6 @@ void EKF::EKFPathVisualize(){
     m_ekf_odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(m_x_post(2));
     
     ekf_pose_pub.publish(m_ekf_odom);
-
-
 
 
 };
@@ -491,7 +492,8 @@ int main(int argc, char **argv){
 
     ros::init(argc, argv, "EKF_node");
     EKF ekf;
-    ros::Rate loop_rate(50);
+    ros::Rate loop_rate(1 / ekf.m_dt);
+    
 
     while(ros::ok()){
         ekf.ExtendKalmanFilter();

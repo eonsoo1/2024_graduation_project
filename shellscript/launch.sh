@@ -2,9 +2,9 @@
 
 gnome-terminal -e "roslaunch localization IMU.launch" &
 sleep 2
-gnome-terminal -e "rosrun localization GPS_node"
-# sleep 2
-# gnome-terminal -e "rosrun localization EKF_node"&
+gnome-terminal -e "rosrun localization GPS_node"&
+sleep 2
+gnome-terminal -e "rosrun localization EKF_node"
 # sleep 2
 # gnome-terminal -e "plotjuggler-ros"
 

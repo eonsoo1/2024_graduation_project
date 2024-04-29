@@ -2,8 +2,6 @@
 #include <ros/ros.h>
 
 #include <sensor_msgs/Imu.h>
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/Quaternion.h>
 #include <geometry_msgs/Vector3.h>
@@ -18,6 +16,7 @@
 #include <tf/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <nav_msgs/Path.h>
 
 #include <thread>
 
@@ -36,7 +35,7 @@ using namespace std;
 class Deadreckoning{
     private:
         ros::NodeHandle nh;
-        ros::Publisher marker_pub;
+        ros::Publisher imu_path_pub;
         ros::Publisher z_calibration_velocity_pub;
         ros::Publisher imu_pose_pub;
 
@@ -55,7 +54,7 @@ class Deadreckoning{
         
 
         Eigen::Vector3d gravity;
-        visualization_msgs::Marker imu_path;
+        nav_msgs::Path m_imu_path;
         chrono::steady_clock::time_point start_time;
         ros::Time time;
 
@@ -70,7 +69,7 @@ class Deadreckoning{
         // std_msgs::Float32 acceleration_z;
         std_msgs::Float32 calib_velocity_z;
 
-        double m_delta_time;
+        
         double m_yaw_rate; 
         double m_dVehicleVel_ms;
         double m_prev_velocity;
@@ -102,13 +101,14 @@ class Deadreckoning{
         bool m_gps_yaw_trigger;
 
     public :
+        double m_delta_time = 0.01;
+
         Deadreckoning();
         ~Deadreckoning(){};
         void UTMCallback(const geometry_msgs::Point::ConstPtr& utm_coord_msg);
         void ImuCallback(const sensor_msgs::Imu::ConstPtr& imu_data_msg);
         void GPSVelocityCallback(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr& gps_velocity_msg);
-        void IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg, 
-                                    const geometry_msgs::Vector3 &accel_msg);
+        void IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg);
         void Pub();
         double CalcOrientation(const geometry_msgs::Quaternion &msg);
         void CollectCalibrationData(std::vector<geometry_msgs::Vector3>& calibration_data, const geometry_msgs::Vector3& msg);
