@@ -25,8 +25,9 @@ void Deadreckoning::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_coord_
             m_utm_y = utm_coord_msg->y;
             m_origin_x = m_utm_x;
             m_origin_y = m_utm_y;
+          
 
-            geometry_msgs::PoseStamped imu_pose_stampt;
+            geometry_msgs::PoseStamped imu_pose_stamp;
             
             m_imu_path.header.frame_id = "world"; // Set the frame id
             m_imu_path.header.stamp = ros::Time::now();
@@ -35,10 +36,10 @@ void Deadreckoning::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_coord_
             p.y = m_origin_y;
             p.z = 0;
 
-            imu_pose_stampt.pose.position = p;
-            imu_pose_stampt.pose.orientation.w = 1;    
+            imu_pose_stamp.pose.position = p;
+            imu_pose_stamp.pose.orientation.w = 1;    
 
-            m_imu_path.poses.push_back(imu_pose_stampt);
+            m_imu_path.poses.push_back(imu_pose_stamp);
             imu_path_pub.publish(m_imu_path);    
 
             transform.setOrigin(tf::Vector3(p.x, p.y, 0.0));
@@ -51,9 +52,12 @@ void Deadreckoning::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_coord_
         else{
             m_utm_x = utm_coord_msg->x;
             m_utm_y = utm_coord_msg->y;
+           
             double distance;
             distance = sqrt(pow((m_utm_x - m_origin_x), 2) + pow((m_utm_y - m_origin_y), 2));
             if(m_dVehicleVel_ms > 0.1 && distance > 3.0 && !m_gps_yaw_trigger){//0.1
+                m_imu_x = m_utm_x;
+                m_imu_y = m_utm_y;
                 m_gps_yaw = atan2((m_utm_y - m_origin_y), (m_utm_x - m_origin_x));
                 m_gps_yaw_trigger = true;
             }
@@ -153,9 +157,6 @@ void Deadreckoning::IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg)
     double dy = 0.0;
     double dyaw = m_yaw_rate * m_delta_time; // yaw의 각속도는 z축을 기준으로하는 회전 속도를 말함
     
-    // m_dVehicleVel_ms = m_prev_velocity + sqrt(pow((accel_msg.x * m_delta_time), 2) + pow((accel_msg.y * m_delta_time), 2));
-    // m_dVehicleVel_ms = (m_prev_velocity) + sqrt(pow((accel_msg.x), 2) + pow((accel_msg.y), 2)) * m_delta_time;
-    
     m_prev_velocity = m_dVehicleVel_ms;
 
     dx = m_dVehicleVel_ms * m_delta_time * cos(m_imu_yaw);
@@ -174,7 +175,15 @@ void Deadreckoning::IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg)
     //     cout << "IMU Y : " << m_imu_y << endl;
     //     m_imu_y = 0;
     // }
-    geometry_msgs::PoseStamped imu_pose_stampt;
+
+    if(m_imu_yaw > 2 * M_PI){
+        m_imu_yaw = 0;
+    }
+    if(m_imu_yaw < - 2 * M_PI){
+        m_imu_yaw = 0;
+    }
+    
+    geometry_msgs::PoseStamped imu_pose_stamp;
     Eigen::VectorXd p_before(2), p_after(2);
     Eigen::MatrixXd R(2,2);
     
@@ -190,10 +199,10 @@ void Deadreckoning::IMUDeadReckoning(const geometry_msgs::Vector3 &velocity_msg)
     p.y = p_after(1);
     p.z = 0;
 
-    imu_pose_stampt.pose.position = p;
-    imu_pose_stampt.pose.orientation.w = 1;
+    imu_pose_stamp.pose.position = p;
+    imu_pose_stamp.pose.orientation.w = 1;
 
-    m_imu_path.poses.push_back(imu_pose_stampt);    
+    m_imu_path.poses.push_back(imu_pose_stamp);    
     // p.x = m_imu_x;
     // p.y = m_imu_y;
     // p.z = 0;

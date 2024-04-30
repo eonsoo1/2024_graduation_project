@@ -73,12 +73,10 @@ Visualization Manager:
           Value: true
         IMU_frame:
           Value: true
-        ekf_frame:
-          Value: false
         gps_frame:
           Value: false
         imu_frame:
-          Value: true
+          Value: false
         world:
           Value: true
       Marker Alpha: 1
@@ -94,8 +92,6 @@ Visualization Manager:
           GPS_frame:
             {}
           IMU_frame:
-            {}
-          ekf_frame:
             {}
           gps_frame:
             {}
@@ -166,7 +162,7 @@ Visualization Manager:
       Buffer Length: 1
       Class: rviz/Path
       Color: 0; 224; 255
-      Enabled: false
+      Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -185,7 +181,7 @@ Visualization Manager:
       Shaft Length: 0.10000000149011612
       Topic: /IMU_path
       Unreliable: false
-      Value: false
+      Value: true
     - Angle Tolerance: 0.10000000149011612
       Class: rviz/Odometry
       Covariance:
@@ -284,7 +280,7 @@ Visualization Manager:
       Buffer Length: 1
       Class: rviz/Path
       Color: 25; 255; 0
-      Enabled: true
+      Enabled: false
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -303,7 +299,7 @@ Visualization Manager:
       Shaft Length: 0.10000000149011612
       Topic: /imu_dr_path
       Unreliable: false
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -341,10 +337,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 12.476225852966309
+      Scale: 5.131354331970215
       Target Frame: <Fixed Frame>
-      X: 0.6785499453544617
-      Y: 14.449121475219727
+      X: 42.63546371459961
+      Y: 27.44351577758789
     Saved: ~
 Window Geometry:
   Displays:
@@ -363,4 +359,4 @@ Window Geometry:
     collapsed: true
   Width: 1320
   X: 1240
-  Y: 199
+  Y: 125

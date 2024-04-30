@@ -8,7 +8,7 @@ GPS::GPS(){
     m_lat = 0;
     m_lon = 0;
     m_alt = 0;
-    // m_origin = lanelet::Origin({ORIGIN_LAT, ORIGIN_LON}); // 삼각지 기준 rviz mapping
+    m_origin = lanelet::Origin({ORIGIN_LAT, ORIGIN_LON}); // 삼각지 기준 rviz mapping
  }
 
 void GPS::GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg){
@@ -19,7 +19,7 @@ void GPS::GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg){
     
     // 시작점 기준 rviz mapping
     if(!gps_bool){
-        m_origin = lanelet::Origin({m_lat, m_lon});
+        // m_origin = lanelet::Origin({m_lat, m_lon});
         gps_bool = true;
     }
     

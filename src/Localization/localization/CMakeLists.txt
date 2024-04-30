@@ -69,3 +69,7 @@ target_link_libraries(GPS_node ${catkin_LIBRARIES})
 add_executable(EKF_node src/ekf.cpp)
 add_dependencies(EKF_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(EKF_node ${catkin_LIBRARIES})
+
+add_executable(csv_reader_node src/map_maker.cpp)
+add_dependencies(csv_reader_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(csv_reader_node ${catkin_LIBRARIES})

@@ -105,7 +105,7 @@ class EKF{
 
 
         Eigen::MatrixXd m_P_post, m_P_prior, A_jacb, H_jacb, Q_noise_cov, R_noise_cov, K_gain;
-        Eigen::VectorXd m_x_post, m_x_prior, m_x_dr, m_z_measured;
+        Eigen::VectorXd m_imu_dr, m_x_post, m_x_prior, m_x_dr, m_z_measured;
 
     public:
         EKF();
@@ -127,7 +127,7 @@ class EKF{
 };
 
 EKF::EKF() : m_P_post(N, N), m_P_prior(N, N), A_jacb(N, N), H_jacb(M, N), Q_noise_cov(N, N), K_gain(N, M), R_noise_cov(M, M),
-             m_x_post(N), m_x_prior(N), m_z_measured(M), m_x_dr(N){
+             m_imu_dr(N), m_x_post(N), m_x_prior(N), m_z_measured(M), m_x_dr(N){
 
     gps_sub = nh.subscribe("/ublox_gps/fix", 1000, &EKF::GPSCallback, this);
     gps_vel_sub = nh.subscribe("/ublox_gps/fix_velocity", 1000, &EKF::GPSVelCallback, this);
@@ -214,9 +214,7 @@ void EKF::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg){
 
 void EKF::IMUCallback(const localization::PoseMsg::ConstPtr& imu_data_msg){
     
-    // m_imu.x = imu_data_msg->pose_x;
-    // m_imu.y = imu_data_msg->pose_y;
-    // m_imu.yaw = imu_data_msg->pose_yaw;
+
     m_yaw_rate = imu_data_msg->yaw_rate;
     m_imu_sub_bool = true;
 
@@ -231,21 +229,7 @@ Eigen::VectorXd EKF::EstimatedModel(Eigen::VectorXd& estimated_input){
     fk << (estimated_input(0) + m_velocity_ms * m_dt * cos(estimated_input(2))),
           (estimated_input(1) + m_velocity_ms * m_dt * sin(estimated_input(2))),
           (estimated_input(2) + m_dt * m_yaw_rate);
-    // cout << fk << endl;
-    // //gps의 첫 헤딩에 맞추어 변환행렬
-    // p_before << fk(0), 
-    //         fk(1);
 
-    // R << cos(m_init.yaw), -sin(m_init.yaw),
-    //      sin(m_init.yaw), cos(m_init.yaw);
-    
-    // p_after = R * p_before;
-
-    // fk << (p_after(0)),
-    //     (p_after(1)),
-    //     (estimated_input(2) + m_dt * m_yaw_rate);
-
-    // cout << fk << endl;
 
     return fk;
 
@@ -276,6 +260,10 @@ void EKF::ExtendKalmanFilter(){
             m_x_post(0) = m_utm.x;
             m_x_post(1) = m_utm.y;
             m_x_post(2) = m_init.yaw;
+
+            m_imu_dr(0) = m_utm.x;
+            m_imu_dr(1) = m_utm.y;
+            m_imu_dr(2) = m_init.yaw;
             // cout << "----------------" << endl;
             // cout << "X prior : " << m_x_post(0) << endl;
             // cout << "Y prior : " << m_x_post(1) << endl;
@@ -303,9 +291,11 @@ void EKF::ExtendKalmanFilter(){
             //         0, 1, 0,
             //         0, 0, 1;
 
+            double alpha = 1e-10;
+
             // prediction 공분산 예시
-            Q_noise_cov <<  0.000000005,  0.0,     0.0,             
-                            0.0,     0.000000005, 0.0,              // 센서 오차 감안 (휴리스틱)
+            Q_noise_cov <<  alpha * m_gps_x_covariance,  0.0,     0.0,             
+                            0.0,    alpha * m_gps_y_covariance, 0.0,              // 센서 오차 감안 (휴리스틱)
                             0.0,     0.0,     0.000000005;          // 직접 센서를 움직여본 후 공분산 구할 것
             
             
@@ -333,11 +323,21 @@ void EKF::ExtendKalmanFilter(){
                 //1. 추정값과 오차 공분산 예측
                 m_x_prior = EstimatedModel(m_x_post);
                 m_P_prior = A_jacb * m_P_post * A_jacb.transpose() + Q_noise_cov;
+
+
+                m_imu_dr = EstimatedModel(m_imu_dr);
+                
+
                 cout << "-----------Q noise----------- \n" <<
                          Q_noise_cov << endl;
+                cout << "-----------R noise----------- \n" <<
+                         R_noise_cov << endl;
                 // measure 값이 들어왔을 때 ekf 실행
                 m_x_post = m_x_prior;
                 m_P_post = m_P_prior;
+
+                
+                
 
                 if(m_utm_update_bool){                 
                     //2. 칼만 이득 계산
@@ -346,6 +346,8 @@ void EKF::ExtendKalmanFilter(){
                     m_x_post = m_x_prior + K_gain * (m_z_measured - MeasurementModel(m_x_prior));
                     //4. 오차 공분산 계산
                     m_P_post = m_P_prior - K_gain * H_jacb * m_P_prior;
+
+
                 }
          
             // }
@@ -427,8 +429,8 @@ void EKF::IMUPathVisualize(){
     m_imu_path.header.frame_id = "world"; // Set the frame id
     m_imu_path.header.stamp = ros::Time::now();
 
-    p_i.x = m_x_prior(0);
-    p_i.y = m_x_prior(1);
+    p_i.x = m_imu_dr(0);
+    p_i.y = m_imu_dr(1);
     p_i.z = 0;
     
     imu_pose.pose.position = p_i;
@@ -439,12 +441,12 @@ void EKF::IMUPathVisualize(){
     imu_path_pub.publish(m_imu_path);
 
     transform_imu.setOrigin(tf::Vector3(p_i.x, p_i.y, 0.0));
-    q_e.setRPY(0, 0, m_x_prior(2));
+    q_e.setRPY(0, 0, m_imu_dr(2));
     transform_imu.setRotation(q_e);
     tfcaster_imu.sendTransform(tf::StampedTransform(transform_imu, ros::Time::now(), "world", "IMU_frame"));
     
     m_imu_odom.pose.pose.position = p_i;
-    m_imu_odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(m_x_prior(2));
+    m_imu_odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(m_imu_dr(2));
     
     imu_pose_pub.publish(m_imu_odom);
 
