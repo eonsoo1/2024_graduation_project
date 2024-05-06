@@ -71,7 +71,6 @@ class EKF{
         Pose m_ekf;
         Pose m_init;
         
-        
 
         bool m_init_bool;
         bool m_utm_bool;
@@ -117,7 +116,7 @@ class EKF{
         void ExtendKalmanFilter();
         void EKFPathVisualize();
         void IMUPathVisualize();
-        void UTMPathVisualize();
+        void UTMPathVisualize(double& utm_x, double& utm_y);
         
         void Pub();
 
@@ -202,9 +201,10 @@ void EKF::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg){
         distance = sqrt(pow((m_utm.x - m_init.x), 2) + pow((m_utm.y - m_init.y), 2));
         if(m_velocity_ms > 0.1 && distance > 3.0 && !m_utm_yaw_trigger){//0.1
             m_init.yaw = atan2((m_utm.y - m_init.y), (m_utm.x - m_init.x));
+            m_z_measured << m_utm.x, 
+                            m_utm.y;
             m_utm_yaw_trigger = true;
         }
-
         m_prev_utm_x = m_utm.x;
         m_prev_utm_y = m_utm.y;
     }
@@ -213,8 +213,6 @@ void EKF::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg){
 };
 
 void EKF::IMUCallback(const localization::PoseMsg::ConstPtr& imu_data_msg){
-    
-
     m_yaw_rate = imu_data_msg->yaw_rate;
     m_imu_sub_bool = true;
 
@@ -271,8 +269,7 @@ void EKF::ExtendKalmanFilter(){
             m_P_post << 1000, 0,    0,
                         0,    1000, 0,
                         0,    0,    1000;
-            
-        
+
             m_init_bool = true;
             
         }
@@ -291,7 +288,8 @@ void EKF::ExtendKalmanFilter(){
             //         0, 1, 0,
             //         0, 0, 1;
 
-            double alpha = 1e-10;
+            double alpha = 1e-12;
+            double beta = 2;
 
             // prediction 공분산 예시
             Q_noise_cov <<  alpha * m_gps_x_covariance,  0.0,     0.0,             
@@ -300,8 +298,8 @@ void EKF::ExtendKalmanFilter(){
             
             
             // gps yaw를 고려하지 않은 measerment 공분산
-            R_noise_cov << m_gps_x_covariance,  0,                
-                           0,                   m_gps_y_covariance;
+            R_noise_cov << beta*m_gps_x_covariance,  0,                
+                           0,                   beta*m_gps_y_covariance;
         
             // gps yaw를 고려하지 않은 measurement value
             m_z_measured << m_utm.x,
@@ -320,38 +318,31 @@ void EKF::ExtendKalmanFilter(){
 
             // if(m_imu_sub_bool){
 
-                //1. 추정값과 오차 공분산 예측
-                m_x_prior = EstimatedModel(m_x_post);
-                m_P_prior = A_jacb * m_P_post * A_jacb.transpose() + Q_noise_cov;
+            //1. 추정값과 오차 공분산 예측
+            m_x_prior = EstimatedModel(m_x_post);
+            m_P_prior = A_jacb * m_P_post * A_jacb.transpose() + Q_noise_cov;
 
-
-                m_imu_dr = EstimatedModel(m_imu_dr);
-                
-
-                cout << "-----------Q noise----------- \n" <<
-                         Q_noise_cov << endl;
-                cout << "-----------R noise----------- \n" <<
-                         R_noise_cov << endl;
-                // measure 값이 들어왔을 때 ekf 실행
-                m_x_post = m_x_prior;
-                m_P_post = m_P_prior;
-
-                
-                
-
-                if(m_utm_update_bool){                 
-                    //2. 칼만 이득 계산
-                    K_gain = m_P_prior * H_jacb.transpose() * (H_jacb * m_P_prior * H_jacb.transpose() + R_noise_cov).inverse();
-                    //3. 추정값 계산
-                    m_x_post = m_x_prior + K_gain * (m_z_measured - MeasurementModel(m_x_prior));
-                    //4. 오차 공분산 계산
-                    m_P_post = m_P_prior - K_gain * H_jacb * m_P_prior;
-
-
-                }
-         
-            // }
+            m_imu_dr = EstimatedModel(m_imu_dr);
             
+            cout << "-----------Q noise----------- \n" <<
+                        Q_noise_cov << endl;
+            cout << "-----------R noise----------- \n" <<
+                        R_noise_cov << endl;
+            // measure 값이 들어왔을 때 ekf 실행
+            m_x_post = m_x_prior;
+            m_P_post = m_P_prior;
+
+            
+            if(m_utm_update_bool){                 
+                //2. 칼만 이득 계산
+                K_gain = m_P_prior * H_jacb.transpose() * (H_jacb * m_P_prior * H_jacb.transpose() + R_noise_cov).inverse();
+                //3. 추정값 계산
+                m_x_post = m_x_prior + K_gain * (m_z_measured - MeasurementModel(m_x_prior));
+                //4. 오차 공분산 계산
+                m_P_post = m_P_prior - K_gain * H_jacb * m_P_prior;
+            }
+        
+            // }
 
         }
     }
@@ -359,28 +350,34 @@ void EKF::ExtendKalmanFilter(){
 
 void EKF::Pub(){
 
-    cout << "----------------" << endl;
-    cout << "GPS(utm) update bool : " << m_utm_update_bool << endl;
+    if(!m_utm_yaw_trigger && m_utm_bool){
+        cout << "-----------" << endl;
+        cout << "GPS(utm) X : " << m_utm.x << endl;
+        cout << "GPS(utm) Y : " << m_utm.y << endl;
+        UTMPathVisualize(m_utm.x, m_utm.y);
+    }
+    else{        
+        cout << "----------------" << endl;
+        cout << "GPS(utm) update bool : " << m_utm_update_bool << endl;
     
-
-    cout << "-----------" << endl;
-    cout << "GPS(utm) X : " << m_z_measured(0) << endl;
-    cout << "GPS(utm) Y : " << m_z_measured(1) << endl;
-    // cout << "GPS(utm) Yaw : " << m_z_measured(2) * 180 / M_PI << endl;
-    
-    cout << "-----------" << endl;
-    cout << "IMU DR X : " << m_x_prior(0) << endl;
-    cout << "IMU DR Y : " << m_x_prior(1) << endl;
-    cout << "IMU DR Yaw : " << m_x_prior(2) * 180 / M_PI << endl;
-    cout << "-----------" << endl;
-    cout << "EKF X : " << m_x_post(0) << endl;
-    cout << "EKF Y : " << m_x_post(1) << endl;
-    cout << "EKF Yaw : " << m_x_post(2) * 180 / M_PI << endl;
-   
-    EKFPathVisualize();
-    IMUPathVisualize();
-    UTMPathVisualize();
-    
+        cout << "-----------" << endl;
+        cout << "GPS(utm) X : " << m_z_measured(0) << endl;
+        cout << "GPS(utm) Y : " << m_z_measured(1) << endl;
+        // cout << "GPS(utm) Yaw : " << m_z_measured(2) * 180 / M_PI << endl;
+        
+        cout << "-----------" << endl;
+        cout << "IMU DR X : " << m_x_prior(0) << endl;
+        cout << "IMU DR Y : " << m_x_prior(1) << endl;
+        cout << "IMU DR Yaw : " << m_x_prior(2) * 180 / M_PI << endl;
+        cout << "-----------" << endl;
+        cout << "EKF X : " << m_x_post(0) << endl;
+        cout << "EKF Y : " << m_x_post(1) << endl;
+        cout << "EKF Yaw : " << m_x_post(2) * 180 / M_PI << endl;
+        
+        EKFPathVisualize();
+        IMUPathVisualize();
+        UTMPathVisualize(m_z_measured(0), m_z_measured(1));
+    }
 }
 
 void EKF::EKFPathVisualize(){
@@ -454,7 +451,7 @@ void EKF::IMUPathVisualize(){
 }; 
 
 
-void EKF::UTMPathVisualize(){
+void EKF::UTMPathVisualize(double& utm_x, double& utm_y){
       // Path Line visualiazation
     geometry_msgs::PoseStamped utm_pose;
     
@@ -464,8 +461,8 @@ void EKF::UTMPathVisualize(){
     m_utm_path.header.frame_id = "world"; // Set the frame id
     m_utm_path.header.stamp = ros::Time::now();
 
-    p_u.x = m_z_measured(0);
-    p_u.y = m_z_measured(1);
+    p_u.x = utm_x;
+    p_u.y = utm_y;
     p_u.z = 0;
     
     utm_pose.pose.position = p_u;

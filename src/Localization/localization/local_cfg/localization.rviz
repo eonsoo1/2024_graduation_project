@@ -73,6 +73,8 @@ Visualization Manager:
           Value: true
         IMU_frame:
           Value: true
+        ekf_frame:
+          Value: false
         gps_frame:
           Value: false
         imu_frame:
@@ -92,6 +94,8 @@ Visualization Manager:
           GPS_frame:
             {}
           IMU_frame:
+            {}
+          ekf_frame:
             {}
           gps_frame:
             {}
@@ -337,10 +341,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 5.131354331970215
+      Scale: 15.735194206237793
       Target Frame: <Fixed Frame>
-      X: 42.63546371459961
-      Y: 27.44351577758789
+      X: 0
+      Y: 0
     Saved: ~
 Window Geometry:
   Displays:
@@ -359,4 +363,4 @@ Window Geometry:
     collapsed: true
   Width: 1320
   X: 1240
-  Y: 125
+  Y: 27
