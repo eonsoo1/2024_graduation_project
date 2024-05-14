@@ -199,7 +199,7 @@ void EKF::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg){
         }
         double distance;
         distance = sqrt(pow((m_utm.x - m_init.x), 2) + pow((m_utm.y - m_init.y), 2));
-        if(m_velocity_ms > 0.1 && distance > 3.0 && !m_utm_yaw_trigger){//0.1
+        if(m_velocity_ms > 0.1 && distance > 2.0 && !m_utm_yaw_trigger){//0.1
             m_init.yaw = atan2((m_utm.y - m_init.y), (m_utm.x - m_init.x));
             m_z_measured << m_utm.x, 
                             m_utm.y;

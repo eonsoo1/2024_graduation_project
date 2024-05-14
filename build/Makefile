@@ -519,6 +519,19 @@ rtcm_msgs_generate_messages_py/fast:
 .PHONY : rtcm_msgs_generate_messages_py/fast
 
 #=============================================================================
+# Target rules for targets named csv_to_markers
+
+# Build rule for target.
+csv_to_markers: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 csv_to_markers
+.PHONY : csv_to_markers
+
+# fast build rule for target.
+csv_to_markers/fast:
+	$(MAKE) -f Localization/localization/CMakeFiles/csv_to_markers.dir/build.make Localization/localization/CMakeFiles/csv_to_markers.dir/build
+.PHONY : csv_to_markers/fast
+
+#=============================================================================
 # Target rules for targets named EKF_node
 
 # Build rule for target.
@@ -2677,6 +2690,7 @@ help:
 	@echo "... rtcm_msgs_generate_messages_nodejs"
 	@echo "... rtcm_msgs_gennodejs"
 	@echo "... rtcm_msgs_generate_messages_py"
+	@echo "... csv_to_markers"
 	@echo "... EKF_node"
 	@echo "... GPS_node"
 	@echo "... IMU_node"

@@ -73,3 +73,7 @@ target_link_libraries(EKF_node ${catkin_LIBRARIES})
 add_executable(csv_reader_node src/map_maker.cpp)
 add_dependencies(csv_reader_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(csv_reader_node ${catkin_LIBRARIES})
+
+add_executable(csv_to_markers src/map_visual.cpp)
+add_dependencies(csv_to_markers  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(csv_to_markers ${catkin_LIBRARIES})

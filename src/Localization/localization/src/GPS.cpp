@@ -19,7 +19,7 @@ void GPS::GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg){
     
     // 시작점 기준 rviz mapping
     if(!gps_bool){
-        m_origin = lanelet::Origin({m_lat, m_lon});
+        // m_origin = lanelet::Origin({m_lat, m_lon});
         gps_bool = true;
     }
     

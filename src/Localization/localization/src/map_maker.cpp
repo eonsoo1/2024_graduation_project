@@ -5,15 +5,25 @@
 #include <vector>
 #include <ros/ros.h>
 
+#include <lanelet2_core/LaneletMap.h>
+#include <lanelet2_io/Io.h>
+#include <lanelet2_projection/UTM.h>
+
+#define ORIGIN_LAT 37.544322//37.542608//330093 // 삼각지 x좌표
+#define ORIGIN_LON 127.078958//127.076774//4156806 // 삼각지 y좌표
+
 int main(int argc, char** argv) {
     // ROS 노드 초기화
     ros::init(argc, argv, "csv_to_osm_node");
     ros::NodeHandle nh;
+    lanelet::Origin origin({ORIGIN_LAT, ORIGIN_LON}); 
 
     // CSV 파일 경로
-    std::string csv_file_path = "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/map_v3.csv";
+    std::string csv_file_path = "../2024_graduation_project/src/Localization/localization/map/IMU_test_data.csv";
     // OSM 파일 경로
-    std::string osm_file_path = "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/map_v3.osm";
+    std::string osm_file_path = "../2024_graduation_project/src/Localization/localization/map/IMU_test_data.osm";
+     // 수정된 CSV 파일 경로
+    std::string modified_csv_file_path = "../2024_graduation_project/src/Localization/localization/map/IMU_test_data_xy.csv";
 
     // OSM 파일 열기
     std::ofstream osm_file(osm_file_path);
@@ -21,6 +31,14 @@ int main(int argc, char** argv) {
     // 파일 열기 성공 여부 확인
     if (!osm_file.is_open()) {
         ROS_ERROR("OSM 파일을 열 수 없습니다.");
+        return 1;
+    }
+    // 수정된 CSV 파일 열기 
+    std::ofstream modified_csv_file(modified_csv_file_path);
+
+    // 파일 열기 성공 여부 확인
+    if (!modified_csv_file.is_open()) {
+        ROS_ERROR("수정된 CSV 파일을 열 수 없습니다.");
         return 1;
     }
 
@@ -68,6 +86,20 @@ int main(int argc, char** argv) {
         prev_latitude_str = latitude_str;
         prev_longitude_str = longitude_str;
 
+        lanelet::GPSPoint gps_point;
+
+        gps_point.lat = std::stod(latitude_str);
+        gps_point.lon = std::stod(longitude_str);
+        
+        lanelet::projection::UtmProjector projection(origin);
+        lanelet::BasicPoint2d point;
+
+        point.x() = projection.forward(gps_point).x();
+        point.y() = projection.forward(gps_point).y();
+
+         // 수정된 CSV 파일에 x, y 좌표 값 저장
+        modified_csv_file << point.x() << "," << point.y() << std::endl;
+
         // 노드 ID 증가
         ++node_id;
     }
@@ -81,7 +113,11 @@ int main(int argc, char** argv) {
     // OSM 파일 닫기
     osm_file.close();
 
+    // 수정된 CSV 파일 닫기
+    modified_csv_file.close();
+
     ROS_INFO("OSM 파일이 성공적으로 생성되었습니다: %s", osm_file_path.c_str());
+    ROS_INFO("수정된 CSV 파일이 성공적으로 생성되었습니다: %s", modified_csv_file_path.c_str());
 
     // ROS 스핀
     ros::spin();

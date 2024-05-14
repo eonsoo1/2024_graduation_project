@@ -17,13 +17,12 @@
 #include <tf/transform_broadcaster.h>
 #include <thread>
 
-
 #include <lanelet2_core/LaneletMap.h>
 #include <lanelet2_io/Io.h>
 #include <lanelet2_projection/UTM.h>
 
-#define ORIGIN_LAT 37.542608//330093 // 삼각지 x좌표
-#define ORIGIN_LON 127.076774//4156806 // 삼각지 y좌표
+#define ORIGIN_LAT 37.544322//37.542608//330093 // 삼각지 x좌표
+#define ORIGIN_LON 127.078958//127.076774//4156806 // 삼각지 y좌표
 
 using namespace std;
  
