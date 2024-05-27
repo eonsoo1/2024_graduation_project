@@ -58,7 +58,7 @@ class EKF{
         ros::Publisher ekf_pose_pub;
         ros::Publisher imu_pose_pub;
         ros::Publisher utm_pose_pub;
-
+        ros::Publisher utm_cov_pub;
         double m_gps_x_covariance;
         double m_gps_y_covariance;
         double m_velocity_ms;        
@@ -71,6 +71,7 @@ class EKF{
         Pose m_ekf;
         Pose m_init;
         
+        int i;
 
         bool m_init_bool;
         bool m_utm_bool;
@@ -87,6 +88,7 @@ class EKF{
         nav_msgs::Odometry m_ekf_odom;
         nav_msgs::Odometry m_imu_odom;
         nav_msgs::Odometry m_utm_odom;
+        
         
         geometry_msgs::Point p_e;
         geometry_msgs::Point p_i;       
@@ -141,7 +143,8 @@ EKF::EKF() : m_P_post(N, N), m_P_prior(N, N), A_jacb(N, N), H_jacb(M, N), Q_nois
     imu_pose_pub = nh.advertise<nav_msgs::Odometry>("/IMU_odom", 1000);
     utm_pose_pub = nh.advertise<nav_msgs::Odometry>("/UTM_odom", 1000);
 
-    
+    utm_cov_pub = nh.advertise<visualization_msgs::Marker>("/UTM_cov", 1000);
+
     m_init_bool = false;
     m_gps_sub_bool = false;
     m_gps_velocity_sub_bool = false;
@@ -324,10 +327,10 @@ void EKF::ExtendKalmanFilter(){
 
             m_imu_dr = EstimatedModel(m_imu_dr);
             
-            cout << "-----------Q noise----------- \n" <<
-                        Q_noise_cov << endl;
-            cout << "-----------R noise----------- \n" <<
-                        R_noise_cov << endl;
+            // cout << "-----------Q noise----------- \n" <<
+            //             Q_noise_cov << endl;
+            // cout << "-----------R noise----------- \n" <<
+            //             R_noise_cov << endl;
             // measure 값이 들어왔을 때 ekf 실행
             m_x_post = m_x_prior;
             m_P_post = m_P_prior;
@@ -354,15 +357,16 @@ void EKF::Pub(){
         cout << "-----------" << endl;
         cout << "GPS(utm) X : " << m_utm.x << endl;
         cout << "GPS(utm) Y : " << m_utm.y << endl;
+        cout << "GPS(utm) cov X : " << m_gps_x_covariance << endl;
+        cout << "GPS(utm) cov Y : " << m_gps_y_covariance << endl;
         UTMPathVisualize(m_utm.x, m_utm.y);
     }
     else{        
-        cout << "----------------" << endl;
-        cout << "GPS(utm) update bool : " << m_utm_update_bool << endl;
-    
         cout << "-----------" << endl;
         cout << "GPS(utm) X : " << m_z_measured(0) << endl;
         cout << "GPS(utm) Y : " << m_z_measured(1) << endl;
+        cout << "GPS(utm) cov X : " << m_gps_x_covariance << endl;
+        cout << "GPS(utm) cov Y : " << m_gps_y_covariance << endl;
         // cout << "GPS(utm) Yaw : " << m_z_measured(2) * 180 / M_PI << endl;
         
         cout << "-----------" << endl;
@@ -454,12 +458,28 @@ void EKF::IMUPathVisualize(){
 void EKF::UTMPathVisualize(double& utm_x, double& utm_y){
       // Path Line visualiazation
     geometry_msgs::PoseStamped utm_pose;
-    
+    visualization_msgs::Marker utm_cov;
+
     m_utm_odom.header.frame_id = "world"; // Set the frame id
     m_utm_odom.header.stamp = ros::Time::now();
 
     m_utm_path.header.frame_id = "world"; // Set the frame id
     m_utm_path.header.stamp = ros::Time::now();
+    
+    utm_cov.header.frame_id = "world"; // Set the frame id
+    utm_cov.header.stamp = ros::Time::now();
+    utm_cov.ns = "cylinders";
+    utm_cov.id = 0;
+    utm_cov.type = visualization_msgs::Marker::CYLINDER;
+    utm_cov.action = visualization_msgs::Marker::ADD;
+    utm_cov.scale.x = sqrt(m_gps_x_covariance); // Diameter of the cylinder
+    utm_cov.scale.y = sqrt(m_gps_y_covariance); // Diameter of the cylinder
+    utm_cov.scale.z = 1.0; // Height of the cylinder
+    
+    utm_cov.color.r = 0.5;
+    utm_cov.color.g = 0.0;
+    utm_cov.color.b = 0.5;
+    utm_cov.color.a = 0.4;
 
     p_u.x = utm_x;
     p_u.y = utm_y;
@@ -468,9 +488,15 @@ void EKF::UTMPathVisualize(double& utm_x, double& utm_y){
     utm_pose.pose.position = p_u;
     utm_pose.pose.orientation.w = 1;
 
+    utm_cov.pose.position = p_u;
+    utm_cov.pose.orientation.w = 1.0;
+
+
     m_utm_path.poses.push_back(utm_pose);    
     
+    utm_cov_pub.publish(utm_cov);
     utm_path_pub.publish(m_utm_path);
+    i++;
 
     transform_utm.setOrigin(tf::Vector3(p_u.x, p_u.y, 0.0));
     q_e.setRPY(0, 0, m_utm.yaw);

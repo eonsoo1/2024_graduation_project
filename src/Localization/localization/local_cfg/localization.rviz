@@ -15,6 +15,9 @@ Panels:
         - /Path3
         - /Odometry3/Shape1
         - /MarkerArray1
+        - /MarkerArray1/Namespaces1
+        - /Marker1
+        - /Marker1/Namespaces1
       Splitter Ratio: 0.5235294103622437
     Tree Height: 753
   - Class: rviz/Selection
@@ -73,6 +76,8 @@ Visualization Manager:
           Value: true
         IMU_frame:
           Value: true
+        gps_frame:
+          Value: false
         world:
           Value: true
       Marker Alpha: 1
@@ -88,6 +93,8 @@ Visualization Manager:
           GPS_frame:
             {}
           IMU_frame:
+            {}
+          gps_frame:
             {}
       Update Interval: 0
       Value: true
@@ -276,6 +283,14 @@ Visualization Manager:
         csv_points: true
       Queue Size: 100
       Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /UTM_cov
+      Name: Marker
+      Namespaces:
+        cylinders: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -303,7 +318,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0.09000000357627869
+      Angle: 1.4699995517730713
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -313,10 +328,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 21.941396713256836
+      Scale: 57.37092971801758
       Target Frame: <Fixed Frame>
-      X: -5.021503448486328
-      Y: 2.4725332260131836
+      X: -86.3094711303711
+      Y: -315.3521728515625
     Saved: ~
 Window Geometry:
   Displays:

@@ -42,9 +42,9 @@ class GPS{
 
         geometry_msgs::Point m_origin_coord;
         geometry_msgs::Point m_utm_coord;
-        float m_lat;
-        float m_lon;
-        float m_alt;
+        double m_lat;
+        double m_lon;
+        double m_alt;
         double m_utm_x;
         double m_utm_y;
         double m_utm_z;

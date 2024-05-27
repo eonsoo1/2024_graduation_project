@@ -87,9 +87,7 @@ void GPS::Print(){
 int main(int argc, char **argv){
 
     ros::init(argc, argv, "GPS_node");
-    
     GPS gps;
- 
     ros::Rate loop_rate(8);
     while(ros::ok()){
 
