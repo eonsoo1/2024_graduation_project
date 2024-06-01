@@ -33,7 +33,7 @@ void Deadreckoning::GPSVelocityCallback(const geometry_msgs::TwistWithCovariance
 void Deadreckoning::ImuCallback(const sensor_msgs::Imu::ConstPtr& imu_data_msg){
 
 if(!data_collect) {
-    if(m_dVehicleVel_ms < 0.3){
+    if(m_dVehicleVel_ms < 0.1){
             cout << "--------------------" << endl;
             cout << "데이터 수집 중" << endl;
             cout << "Velocity : " << m_dVehicleVel_ms << endl;
@@ -56,8 +56,8 @@ else{
     }
     //초기값 설정 이후 
     else{
-        // m_yaw_rate = imu_data_msg->angular_velocity.z - calibration_velocity_offsets.z; // 각속도 보정 o
-        m_yaw_rate = imu_data_msg->angular_velocity.z; // 각속도 보정 x
+        m_yaw_rate = imu_data_msg->angular_velocity.z - calibration_velocity_offsets.z; // 각속도 보정 o
+        // m_yaw_rate = imu_data_msg->angular_velocity.z; // 각속도 보정 x
         Pub();
     }
 }
@@ -73,22 +73,17 @@ void Deadreckoning::CollectCalibrationData(std::vector<geometry_msgs::Vector3>& 
 void Deadreckoning::CalibrateSensor(const std::vector<geometry_msgs::Vector3>& calibration_data,
                             geometry_msgs::Vector3& calibration_offsets) {
         // 데이터의 평균값 계산
-    double sum_x = 0.0, sum_y = 0.0, sum_z = 0.0;
+    double  sum_z = 0.0;
     for (const auto& data : calibration_data) {
-        sum_x += data.x;
-        sum_y += data.y;
+
         sum_z += data.z;
     }
-    double average_x = sum_x / calibration_data.size();
-    double average_y = sum_y / calibration_data.size();
+
     double average_z = sum_z / calibration_data.size();
 
-    // 보정 오프셋 설정하여 편향 보정
-    calibration_offsets.x = average_x;
-    calibration_offsets.y = average_y;
     calibration_offsets.z = average_z; 
     
-    std::cout << "보정 오프셋: [" << calibration_offsets.x << ", " << calibration_offsets.y << ", " << calibration_offsets.z << "]\n";
+    std::cout << "보정 오프셋: ["  << calibration_offsets.z << "]\n";
 }
 
 

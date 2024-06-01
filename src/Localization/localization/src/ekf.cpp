@@ -156,7 +156,6 @@ EKF::EKF() : m_P_post(N, N), m_P_prior(N, N), A_jacb(N, N), H_jacb(M, N), Q_nois
     m_prev_utm_x = 0;
     m_prev_utm_y = 0;
 
-    nh.param("init_yaw", m_init.yaw, INITIAL_YAW);
 
 };
 
@@ -202,7 +201,7 @@ void EKF::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg){
         }
         double distance;
         distance = sqrt(pow((m_utm.x - m_init.x), 2) + pow((m_utm.y - m_init.y), 2));
-        if(m_velocity_ms > 0.1 && distance > 2.0 && !m_utm_yaw_trigger){//0.1
+        if(m_velocity_ms > 0.1 && !m_utm_yaw_trigger){//0.1 //  && distance > 1.0
             m_init.yaw = atan2((m_utm.y - m_init.y), (m_utm.x - m_init.x));
             m_z_measured << m_utm.x, 
                             m_utm.y;
@@ -231,6 +230,12 @@ Eigen::VectorXd EKF::EstimatedModel(Eigen::VectorXd& estimated_input){
           (estimated_input(1) + m_velocity_ms * m_dt * sin(estimated_input(2))),
           (estimated_input(2) + m_dt * m_yaw_rate);
 
+    if(fk[2] > M_PI){
+        fk[2] = -M_PI;
+    }
+    else if(fk[2] < -M_PI){
+        fk[2] = -M_PI;
+    }
 
     return fk;
 
@@ -292,7 +297,7 @@ void EKF::ExtendKalmanFilter(){
             //         0, 0, 1;
 
             double alpha = 1e-12;
-            double beta = 2;
+            double beta = 1;
 
             // prediction 공분산 예시
             Q_noise_cov <<  alpha * m_gps_x_covariance,  0.0,     0.0,             

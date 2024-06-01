@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     std::string filename;
-    nh.param<std::string>("csv_filename", filename, "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/theater_xy.csv");  // CSV 파일 이름 파라미터 읽기
+    nh.param<std::string>("csv_filename", filename, "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Monday1_xy.csv");  // CSV 파일 이름 파라미터 읽기
 
     ros::Publisher marker_pub = nh.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 1);  // 마커 배열 발행자 설정
 

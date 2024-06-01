@@ -540,6 +540,12 @@ boost_wserialization_DIR:PATH=/usr/lib/x86_64-linux-gnu/cmake/boost_wserializati
 //The directory containing a CMake configuration file for catkin.
 catkin_DIR:PATH=/opt/ros/noetic/share/catkin/cmake
 
+//Value Computed by CMake
+control_BINARY_DIR:STATIC=/home/eonsoo/2024_graduation_project/build/Control/control
+
+//Value Computed by CMake
+control_SOURCE_DIR:STATIC=/home/eonsoo/2024_graduation_project/src/Control/control
+
 //The directory containing a CMake configuration file for cpp_common.
 cpp_common_DIR:PATH=/opt/ros/noetic/share/cpp_common/cmake
 
@@ -708,6 +714,12 @@ sensor_msgs_DIR:PATH=/opt/ros/noetic/share/sensor_msgs/cmake
 
 //The directory containing a CMake configuration file for std_msgs.
 std_msgs_DIR:PATH=/opt/ros/noetic/share/std_msgs/cmake
+
+//Value Computed by CMake
+teleop_BINARY_DIR:STATIC=/home/eonsoo/2024_graduation_project/build/teleop
+
+//Value Computed by CMake
+teleop_SOURCE_DIR:STATIC=/home/eonsoo/2024_graduation_project/src/teleop
 
 //The directory containing a CMake configuration file for tf2.
 tf2_DIR:PATH=/opt/ros/noetic/share/tf2/cmake
@@ -922,7 +934,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=13
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=15
 //ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_OBJDUMP
