@@ -58,6 +58,7 @@ class EKF{
         ros::Publisher ekf_pose_pub;
         ros::Publisher imu_pose_pub;
         ros::Publisher utm_pose_pub;
+        ros::Publisher vehicle_pose_pub;
         ros::Publisher utm_cov_pub;
         double m_gps_x_covariance;
         double m_gps_y_covariance;
@@ -89,6 +90,7 @@ class EKF{
         nav_msgs::Odometry m_imu_odom;
         nav_msgs::Odometry m_utm_odom;
         
+        localization::PoseMsg vehicle_pose;
         
         geometry_msgs::Point p_e;
         geometry_msgs::Point p_i;       
@@ -142,6 +144,8 @@ EKF::EKF() : m_P_post(N, N), m_P_prior(N, N), A_jacb(N, N), H_jacb(M, N), Q_nois
     ekf_pose_pub = nh.advertise<nav_msgs::Odometry>("/EKF_odom", 1000);
     imu_pose_pub = nh.advertise<nav_msgs::Odometry>("/IMU_odom", 1000);
     utm_pose_pub = nh.advertise<nav_msgs::Odometry>("/UTM_odom", 1000);
+
+    vehicle_pose_pub = nh.advertise<localization::PoseMsg>("/vehicle_pose", 1000);
 
     utm_cov_pub = nh.advertise<visualization_msgs::Marker>("/UTM_cov", 1000);
 
@@ -201,7 +205,7 @@ void EKF::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg){
         }
         double distance;
         distance = sqrt(pow((m_utm.x - m_init.x), 2) + pow((m_utm.y - m_init.y), 2));
-        if(m_velocity_ms > 0.1 && !m_utm_yaw_trigger){//0.1 //  && distance > 1.0
+        if(m_velocity_ms > 0.1 && distance > 3 && !m_utm_yaw_trigger){//0.1 // 
             m_init.yaw = atan2((m_utm.y - m_init.y), (m_utm.x - m_init.x));
             m_z_measured << m_utm.x, 
                             m_utm.y;
@@ -354,6 +358,7 @@ void EKF::ExtendKalmanFilter(){
 
         }
     }
+  
 }
 
 void EKF::Pub(){
@@ -365,6 +370,16 @@ void EKF::Pub(){
         cout << "GPS(utm) cov X : " << m_gps_x_covariance << endl;
         cout << "GPS(utm) cov Y : " << m_gps_y_covariance << endl;
         UTMPathVisualize(m_utm.x, m_utm.y);
+        double vehicle_yaw = atan2((m_utm.y - m_init.y), (m_utm.x - m_init.x));
+        if(vehicle_yaw > M_PI){
+            vehicle_yaw = -M_PI;
+        }
+        else if(vehicle_yaw < -M_PI){
+            vehicle_yaw = -M_PI;
+        }   
+        vehicle_pose.pose_x = m_utm.x;
+        vehicle_pose.pose_y = m_utm.y;
+        vehicle_pose.pose_yaw = vehicle_yaw  * 180 / M_PI; //rad to degree
     }
     else{        
         cout << "-----------" << endl;
@@ -386,7 +401,13 @@ void EKF::Pub(){
         EKFPathVisualize();
         IMUPathVisualize();
         UTMPathVisualize(m_z_measured(0), m_z_measured(1));
+
+        vehicle_pose.pose_x = m_x_post(0);
+        vehicle_pose.pose_y = m_x_post(1);
+        vehicle_pose.pose_yaw = m_x_post(2) * 180 / M_PI; //rad to degree
     }
+
+    vehicle_pose_pub.publish(vehicle_pose);
 }
 
 void EKF::EKFPathVisualize(){
