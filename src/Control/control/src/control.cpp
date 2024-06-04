@@ -32,8 +32,8 @@ Control::Control(){
 
 void Control::Pub(){
 
-    m_throttle = 196;
-    m_steering = 140;
+    m_throttle = 0;
+    m_steering = 195;
 
     // control_data 배열 생성 및 초기화
     std_msgs::Int16MultiArray control_data;

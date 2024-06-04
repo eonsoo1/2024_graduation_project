@@ -477,6 +477,15 @@ actionlib_DIR:PATH=/opt/ros/noetic/share/actionlib/cmake
 //The directory containing a CMake configuration file for actionlib_msgs.
 actionlib_msgs_DIR:PATH=/opt/ros/noetic/share/actionlib_msgs/cmake
 
+//Value Computed by CMake
+autonomous_msgs_BINARY_DIR:STATIC=/home/eonsoo/2024_graduation_project/build/Control/autonomous_msgs
+
+//The directory containing a CMake configuration file for autonomous_msgs.
+autonomous_msgs_DIR:PATH=/home/eonsoo/2024_graduation_project/devel/share/autonomous_msgs/cmake
+
+//Value Computed by CMake
+autonomous_msgs_SOURCE_DIR:STATIC=/home/eonsoo/2024_graduation_project/src/Control/autonomous_msgs
+
 //The directory containing a CMake configuration file for boost_atomic.
 boost_atomic_DIR:PATH=/usr/lib/x86_64-linux-gnu/cmake/boost_atomic-1.71.0
 
@@ -676,6 +685,12 @@ ntrip_ros_BINARY_DIR:STATIC=/home/eonsoo/2024_graduation_project/build/Localizat
 //Value Computed by CMake
 ntrip_ros_SOURCE_DIR:STATIC=/home/eonsoo/2024_graduation_project/src/Localization/ublox_f9p/ntrip_ros_python3
 
+//Value Computed by CMake
+planning_BINARY_DIR:STATIC=/home/eonsoo/2024_graduation_project/build/Control/planning
+
+//Value Computed by CMake
+planning_SOURCE_DIR:STATIC=/home/eonsoo/2024_graduation_project/src/Control/planning
+
 //The directory containing a CMake configuration file for ros_environment.
 ros_environment_DIR:PATH=/opt/ros/noetic/share/ros_environment/cmake
 
@@ -696,6 +711,12 @@ rosgraph_DIR:PATH=/opt/ros/noetic/share/rosgraph/cmake
 
 //The directory containing a CMake configuration file for rosgraph_msgs.
 rosgraph_msgs_DIR:PATH=/opt/ros/noetic/share/rosgraph_msgs/cmake
+
+//The directory containing a CMake configuration file for roslib.
+roslib_DIR:PATH=/opt/ros/noetic/share/roslib/cmake
+
+//The directory containing a CMake configuration file for rospack.
+rospack_DIR:PATH=/opt/ros/noetic/share/rospack/cmake
 
 //The directory containing a CMake configuration file for rospy.
 rospy_DIR:PATH=/opt/ros/noetic/share/rospy/cmake
@@ -934,7 +955,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=15
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=17
 //ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_OBJDUMP

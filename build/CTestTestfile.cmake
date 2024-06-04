@@ -6,8 +6,10 @@
 # testing this directory and lists subdirectories to be tested as well.
 subdirs("gtest")
 subdirs("Localization/ublox_f9p/ntrip_ros_python3")
+subdirs("Control/autonomous_msgs")
 subdirs("Localization/ublox_f9p/rtcm_msgs")
 subdirs("Localization/ublox_f9p/ublox")
+subdirs("Control/planning")
 subdirs("teleop")
 subdirs("Control/control")
 subdirs("Localization/localization")

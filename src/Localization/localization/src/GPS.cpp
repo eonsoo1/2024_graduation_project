@@ -9,6 +9,7 @@ GPS::GPS(){
     m_lon = 0;
     m_alt = 0;
     m_origin = lanelet::Origin({ORIGIN_LAT, ORIGIN_LON}); // 삼각지 기준 rviz mapping
+    
  }
 
 void GPS::GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg){
@@ -66,6 +67,15 @@ void GPS::GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg){
 
 
     gps_path.points.push_back(m_utm_coord); // 점 추가
+
+     // UTM 좌표를 다시 위도, 경도로 변환
+    
+    lanelet::GPSPoint gps_converted = projection.reverse(m_utm_point);
+    double converted_lat = gps_converted.lat;
+    double converted_lon = gps_converted.lon;
+
+    ROS_INFO("Converted latitude : %f", converted_lat);
+    ROS_INFO("Converted longitude : %f", converted_lon);
 
     // 발행된 marker를 rviz에 표시합니다.
     // marker_pub.publish(gps_path);

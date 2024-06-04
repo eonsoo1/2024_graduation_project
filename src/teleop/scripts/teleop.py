@@ -40,7 +40,7 @@ def teleop():
 
         if key == 'w':
             velocity = velocity + 5
-            steering = 0 
+            # steering = 0 
             status = status + 1
 
             
@@ -56,7 +56,7 @@ def teleop():
             status = status + 1
         elif key == 'x':
             velocity = velocity - 5
-            steering = 0
+            # steering = 0
             status = status + 1
         else:
             if (key == '\x03'):

@@ -35,6 +35,8 @@
 #define INITIAL_YAW 81.3
 #define N           3  
 #define M           2 
+#define ORIGIN_LAT 37.544322//37.542608//330093 // 삼각지 x좌표
+#define ORIGIN_LON 127.078958//127.076774//4156806 // 삼각지 y좌표
 
 using namespace std;
 
@@ -60,6 +62,8 @@ class EKF{
         ros::Publisher utm_pose_pub;
         ros::Publisher vehicle_pose_pub;
         ros::Publisher utm_cov_pub;
+        ros::Publisher lat_lon_pub;
+
         double m_gps_x_covariance;
         double m_gps_y_covariance;
         double m_velocity_ms;        
@@ -71,7 +75,7 @@ class EKF{
         Pose m_imu;
         Pose m_ekf;
         Pose m_init;
-        
+        lanelet::BasicPoint3d vehicle_location;
         int i;
 
         bool m_init_bool;
@@ -90,7 +94,7 @@ class EKF{
         nav_msgs::Odometry m_imu_odom;
         nav_msgs::Odometry m_utm_odom;
         
-        localization::PoseMsg vehicle_pose;
+        localization::PoseMsg m_vehicle_pose;
         
         geometry_msgs::Point p_e;
         geometry_msgs::Point p_i;       
@@ -106,6 +110,7 @@ class EKF{
         tf::Transform transform_utm;
         tf::Quaternion q_u;
 
+        lanelet::Origin m_origin; 
 
         Eigen::MatrixXd m_P_post, m_P_prior, A_jacb, H_jacb, Q_noise_cov, R_noise_cov, K_gain;
         Eigen::VectorXd m_imu_dr, m_x_post, m_x_prior, m_x_dr, m_z_measured;
@@ -145,7 +150,9 @@ EKF::EKF() : m_P_post(N, N), m_P_prior(N, N), A_jacb(N, N), H_jacb(M, N), Q_nois
     imu_pose_pub = nh.advertise<nav_msgs::Odometry>("/IMU_odom", 1000);
     utm_pose_pub = nh.advertise<nav_msgs::Odometry>("/UTM_odom", 1000);
 
-    vehicle_pose_pub = nh.advertise<localization::PoseMsg>("/vehicle_pose", 1000);
+    vehicle_pose_pub = nh.advertise<localization::PoseMsg>("/m_vehicle_pose", 1000);
+
+    lat_lon_pub = nh.advertise<geometry_msgs::Point>("/m_vehicle_lat_lon", 1000);
 
     utm_cov_pub = nh.advertise<visualization_msgs::Marker>("/UTM_cov", 1000);
 
@@ -160,6 +167,8 @@ EKF::EKF() : m_P_post(N, N), m_P_prior(N, N), A_jacb(N, N), H_jacb(M, N), Q_nois
     m_prev_utm_x = 0;
     m_prev_utm_y = 0;
 
+    m_origin = lanelet::Origin({ORIGIN_LAT, ORIGIN_LON}); // 삼각지 기준 rviz mapping
+    
 
 };
 
@@ -205,7 +214,7 @@ void EKF::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg){
         }
         double distance;
         distance = sqrt(pow((m_utm.x - m_init.x), 2) + pow((m_utm.y - m_init.y), 2));
-        if(m_velocity_ms > 0.1 && distance > 3 && !m_utm_yaw_trigger){//0.1 // 
+        if(m_velocity_ms > 0.1 && distance > 1 && !m_utm_yaw_trigger){//0.1 // 
             m_init.yaw = atan2((m_utm.y - m_init.y), (m_utm.x - m_init.x));
             m_z_measured << m_utm.x, 
                             m_utm.y;
@@ -305,7 +314,7 @@ void EKF::ExtendKalmanFilter(){
 
             // prediction 공분산 예시
             Q_noise_cov <<  alpha * m_gps_x_covariance,  0.0,     0.0,             
-                            0.0,    alpha * m_gps_y_covariance, 0.0,              // 센서 오차 감안 (휴리스틱)
+                            0.0,    alpha * m_gps_y_covariance, 0.0,    // 센서 오차 감안 (휴리스틱)
                             0.0,     0.0,     0.000000005;          // 직접 센서를 움직여본 후 공분산 구할 것
             
             
@@ -362,13 +371,16 @@ void EKF::ExtendKalmanFilter(){
 }
 
 void EKF::Pub(){
+    lanelet::projection::UtmProjector projection(m_origin);
 
+    std::cout << std::fixed << std::setprecision(15); // 소숫점 15자리까지 출력
+    
     if(!m_utm_yaw_trigger && m_utm_bool){
         cout << "-----------" << endl;
         cout << "GPS(utm) X : " << m_utm.x << endl;
         cout << "GPS(utm) Y : " << m_utm.y << endl;
-        cout << "GPS(utm) cov X : " << m_gps_x_covariance << endl;
-        cout << "GPS(utm) cov Y : " << m_gps_y_covariance << endl;
+        // cout << "GPS(utm) cov X : " << m_gps_x_covariance << endl;
+        // cout << "GPS(utm) cov Y : " << m_gps_y_covariance << endl;
         UTMPathVisualize(m_utm.x, m_utm.y);
         double vehicle_yaw = atan2((m_utm.y - m_init.y), (m_utm.x - m_init.x));
         if(vehicle_yaw > M_PI){
@@ -377,16 +389,16 @@ void EKF::Pub(){
         else if(vehicle_yaw < -M_PI){
             vehicle_yaw = -M_PI;
         }   
-        vehicle_pose.pose_x = m_utm.x;
-        vehicle_pose.pose_y = m_utm.y;
-        vehicle_pose.pose_yaw = vehicle_yaw  * 180 / M_PI; //rad to degree
+        m_vehicle_pose.x = m_utm.x;
+        m_vehicle_pose.y = m_utm.y;
+        m_vehicle_pose.heading = vehicle_yaw  * 180 / M_PI; //rad to degree
     }
     else{        
         cout << "-----------" << endl;
         cout << "GPS(utm) X : " << m_z_measured(0) << endl;
         cout << "GPS(utm) Y : " << m_z_measured(1) << endl;
-        cout << "GPS(utm) cov X : " << m_gps_x_covariance << endl;
-        cout << "GPS(utm) cov Y : " << m_gps_y_covariance << endl;
+        // cout << "GPS(utm) cov X : " << m_gps_x_covariance << endl;
+        // cout << "GPS(utm) cov Y : " << m_gps_y_covariance << endl;
         // cout << "GPS(utm) Yaw : " << m_z_measured(2) * 180 / M_PI << endl;
         
         cout << "-----------" << endl;
@@ -402,12 +414,28 @@ void EKF::Pub(){
         IMUPathVisualize();
         UTMPathVisualize(m_z_measured(0), m_z_measured(1));
 
-        vehicle_pose.pose_x = m_x_post(0);
-        vehicle_pose.pose_y = m_x_post(1);
-        vehicle_pose.pose_yaw = m_x_post(2) * 180 / M_PI; //rad to degree
+        m_vehicle_pose.x = m_x_post(0);
+        m_vehicle_pose.y = m_x_post(1);
+        m_vehicle_pose.heading = m_x_post(2) * 180 / M_PI; //rad to degree
     }
+    vehicle_location.x() = m_vehicle_pose.x; 
+    vehicle_location.y() = m_vehicle_pose.y;
+    vehicle_location.z() = 0;
 
-    vehicle_pose_pub.publish(vehicle_pose);
+    //수정 필요
+    lanelet::GPSPoint gps_converted = projection.reverse(vehicle_location);
+    geometry_msgs::Point vehicle_lat_lon;
+    
+    vehicle_lat_lon.x = gps_converted.lat;
+    vehicle_lat_lon.y = gps_converted.lon;
+
+    cout << "-----------" << endl;
+    cout << "Converted latitude : " << vehicle_lat_lon.x  << endl;
+    cout << "Converted longitude : " << vehicle_lat_lon.y << endl;
+    cout << "" << endl;
+    
+    lat_lon_pub.publish(vehicle_lat_lon);
+    vehicle_pose_pub.publish(m_vehicle_pose);
 }
 
 void EKF::EKFPathVisualize(){
