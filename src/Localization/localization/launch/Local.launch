@@ -1,0 +1,13 @@
+<launch>
+
+  <node pkg="localization" type="GPS_node" name="GPS_node">
+  </node>
+  <node pkg="localization" type="EKF_node" name="EKF_node"  output="screen">
+  </node>
+  <node pkg="localization" type="IMU_node" name="IMU_node" >
+  </node>
+  <node pkg="localization" type="csv_to_markers" name="csv_to_markers" >
+  </node>
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find localization)/local_cfg/localization.rviz" />
+  
+</launch>

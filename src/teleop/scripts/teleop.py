@@ -15,7 +15,7 @@ Max_steeromg = 250
 MAX_Velocity = 255
 
 
-pub = rospy.Publisher('/control_data', Int16MultiArray, queue_size=1)
+pub = rospy.Publisher('/ctrl_cmd', Int16MultiArray, queue_size=1)
 
 
 def getKey():
@@ -61,7 +61,7 @@ def teleop():
         else:
             if (key == '\x03'):
                 break
-        pubmsg.data = [velocity,steering]
+        pubmsg.data = [velocity, steering]
         
         pub.publish(pubmsg)
 

@@ -1026,6 +1026,19 @@ planning_geneus/fast:
 .PHONY : planning_geneus/fast
 
 #=============================================================================
+# Target rules for targets named auto_drive_test
+
+# Build rule for target.
+auto_drive_test: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 auto_drive_test
+.PHONY : auto_drive_test
+
+# fast build rule for target.
+auto_drive_test/fast:
+	$(MAKE) -f Control/planning/CMakeFiles/auto_drive_test.dir/build.make Control/planning/CMakeFiles/auto_drive_test.dir/build
+.PHONY : auto_drive_test/fast
+
+#=============================================================================
 # Target rules for targets named planning_genlisp
 
 # Build rule for target.
@@ -1115,6 +1128,19 @@ planning_genpy: cmake_check_build_system
 planning_genpy/fast:
 	$(MAKE) -f Control/planning/CMakeFiles/planning_genpy.dir/build.make Control/planning/CMakeFiles/planning_genpy.dir/build
 .PHONY : planning_genpy/fast
+
+#=============================================================================
+# Target rules for targets named pure_pursuit
+
+# Build rule for target.
+pure_pursuit: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 pure_pursuit
+.PHONY : pure_pursuit
+
+# fast build rule for target.
+pure_pursuit/fast:
+	$(MAKE) -f Control/planning/CMakeFiles/pure_pursuit.dir/build.make Control/planning/CMakeFiles/pure_pursuit.dir/build
+.PHONY : pure_pursuit/fast
 
 #=============================================================================
 # Target rules for targets named auto_drive
@@ -3171,6 +3197,7 @@ help:
 	@echo "... roscpp_generate_messages_eus"
 	@echo "... roscpp_generate_messages_cpp"
 	@echo "... planning_geneus"
+	@echo "... auto_drive_test"
 	@echo "... planning_genlisp"
 	@echo "... planning_generate_messages_nodejs"
 	@echo "... planning_gennodejs"
@@ -3178,6 +3205,7 @@ help:
 	@echo "... planning_generate_messages_py"
 	@echo "... lattice_planner"
 	@echo "... planning_genpy"
+	@echo "... pure_pursuit"
 	@echo "... auto_drive"
 	@echo "... rosgraph_msgs_generate_messages_cpp"
 	@echo "... visualization_msgs_generate_messages_py"

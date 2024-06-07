@@ -251,7 +251,7 @@ class pathreader{
                 last_local_waypoint = current_waypoint + 10;
             }
 
-            out_path.header.frame_id = "/world";
+            out_path.header.frame_id = "world";
 
             for(int i = current_waypoint ; last_local_waypoint > i ; ++i){
                 geometry_msgs::PoseStamped tmp_pose;

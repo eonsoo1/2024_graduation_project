@@ -1,9 +1,0 @@
-<launch>
-  <arg name="m_init_yaw" default="3.0"/>
-
-    <node pkg="localization" type="IMU_node" name="IMU_node"  output="screen">
-  </node>
-        <param name="init_yaw" type="double" value="$(arg m_init_yaw)" />
-
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find localization)/local_cfg/localization.rviz" />
-</launch>

@@ -12,6 +12,7 @@ from pyproj import Proj
 from std_msgs.msg import Float32MultiArray
 
 from morai_msgs.msg import GPSMessage, EgoVehicleStatus
+from autonomous_msgs import PoseMsg
 
 # global_path 와 turtle의 status_msg를 이용해
 # 현재 waypoint와 local_path를 생성
@@ -122,7 +123,7 @@ class pathReader:
 class UTMConverter:
     def __init__(self, zone=52):
 
-        self.gps_sub = rospy.Subscriber("/gps", GPSMessage, self.navsat_callback)
+        self.gps_sub = rospy.Subscriber("/gps", PoseMsg, self.navsat_callback)
         self.x, self.y = 0,0
         #데이터 가져오는 부분
         self.proj_UTM = Proj(proj='utm',zone=52,ellps='WGS84',preserve_units=False)
@@ -171,7 +172,7 @@ if __name__ == '__main__' :
         # tl=turtle_listener()
         gp = UTMConverter()
         # 전역 경로 로드
-        p_r=pathReader("shark")
+        p_r=pathReader("planning")
         global_path = p_r.read_txt("new_way.txt")
 
         rate=rospy.Rate(30)

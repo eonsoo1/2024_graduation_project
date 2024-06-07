@@ -35,8 +35,9 @@
 #define INITIAL_YAW 81.3
 #define N           3  
 #define M           2 
-#define ORIGIN_LAT 37.544322//37.542608//330093 // 삼각지 x좌표
-#define ORIGIN_LON 127.078958//127.076774//4156806 // 삼각지 y좌표
+
+#define ORIGIN_LAT 37.544322//37.542883////37.542608//330093 // 삼각지 x좌표
+#define ORIGIN_LON 127.078958//127.077443////127.076774//4156806 // 삼각지 y좌표
 
 using namespace std;
 
@@ -209,12 +210,13 @@ void EKF::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg){
             m_utm_update_bool = true;
             m_utm.yaw = atan2((m_utm.y - m_prev_utm_y), (m_utm.x - m_prev_utm_x));
         }
-            else{
+        else{
             m_utm_update_bool = false;
         }
+
         double distance;
         distance = sqrt(pow((m_utm.x - m_init.x), 2) + pow((m_utm.y - m_init.y), 2));
-        if(m_velocity_ms > 0.1 && distance > 1 && !m_utm_yaw_trigger){//0.1 // 
+        if(m_velocity_ms > 0.1 && distance > 0.5 && !m_utm_yaw_trigger){//0.1 //  
             m_init.yaw = atan2((m_utm.y - m_init.y), (m_utm.x - m_init.x));
             m_z_measured << m_utm.x, 
                             m_utm.y;
@@ -309,7 +311,7 @@ void EKF::ExtendKalmanFilter(){
             //         0, 1, 0,
             //         0, 0, 1;
 
-            double alpha = 1e-12;
+            double alpha = 1e-3; // 12  
             double beta = 1;
 
             // prediction 공분산 예시
@@ -376,9 +378,9 @@ void EKF::Pub(){
     std::cout << std::fixed << std::setprecision(15); // 소숫점 15자리까지 출력
     
     if(!m_utm_yaw_trigger && m_utm_bool){
-        cout << "-----------" << endl;
-        cout << "GPS(utm) X : " << m_utm.x << endl;
-        cout << "GPS(utm) Y : " << m_utm.y << endl;
+        cout <<  "-----------" << endl;
+        cout <<  "GPS(utm) X : " << m_utm.x << endl;
+        cout <<  "GPS(utm) Y : " << m_utm.y << endl;
         // cout << "GPS(utm) cov X : " << m_gps_x_covariance << endl;
         // cout << "GPS(utm) cov Y : " << m_gps_y_covariance << endl;
         UTMPathVisualize(m_utm.x, m_utm.y);
@@ -429,10 +431,6 @@ void EKF::Pub(){
     vehicle_lat_lon.x = gps_converted.lat;
     vehicle_lat_lon.y = gps_converted.lon;
 
-    cout << "-----------" << endl;
-    cout << "Converted latitude : " << vehicle_lat_lon.x  << endl;
-    cout << "Converted longitude : " << vehicle_lat_lon.y << endl;
-    cout << "" << endl;
     
     lat_lon_pub.publish(vehicle_lat_lon);
     vehicle_pose_pub.publish(m_vehicle_pose);

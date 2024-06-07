@@ -135,10 +135,18 @@ add_executable(auto_drive src/auto_drive.cpp)
 add_dependencies(auto_drive ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(auto_drive ${catkin_LIBRARIES})
 
+add_executable(auto_drive_test src/auto_drive_test.cpp)
+add_dependencies(auto_drive_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(auto_drive_test ${catkin_LIBRARIES})
+
 
 add_executable(lattice_planner src/lattice_planner.cpp)
 add_dependencies(lattice_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(lattice_planner ${catkin_LIBRARIES})
+
+add_executable(pure_pursuit src/pure_pursuit.cpp)
+add_dependencies(pure_pursuit ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(pure_pursuit ${catkin_LIBRARIES})
 
 
 
