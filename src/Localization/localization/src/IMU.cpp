@@ -56,8 +56,8 @@ else{
     }
     //초기값 설정 이후 
     else{
-        m_yaw_rate = imu_data_msg->angular_velocity.z - calibration_velocity_offsets.z; // 각속도 보정 o
-        // m_yaw_rate = imu_data_msg->angular_velocity.z; // 각속도 보정 x
+        // m_yaw_rate = imu_data_msg->angular_velocity.z - calibration_velocity_offsets.z; // 각속도 보정 o
+        m_yaw_rate = imu_data_msg->angular_velocity.z; // 각속도 보정 x
         Pub();
     }
 }

@@ -216,7 +216,7 @@ void EKF::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg){
 
         double distance;
         distance = sqrt(pow((m_utm.x - m_init.x), 2) + pow((m_utm.y - m_init.y), 2));
-        if(m_velocity_ms > 0.1 && distance > 0.5 && !m_utm_yaw_trigger){//0.1 //  
+        if(m_velocity_ms > 0.3   && distance > 1.  && !m_utm_yaw_trigger){//0.1 // 
             m_init.yaw = atan2((m_utm.y - m_init.y), (m_utm.x - m_init.x));
             m_z_measured << m_utm.x, 
                             m_utm.y;
@@ -249,7 +249,7 @@ Eigen::VectorXd EKF::EstimatedModel(Eigen::VectorXd& estimated_input){
         fk[2] = -M_PI;
     }
     else if(fk[2] < -M_PI){
-        fk[2] = -M_PI;
+        fk[2] = M_PI;
     }
 
     return fk;
@@ -311,12 +311,12 @@ void EKF::ExtendKalmanFilter(){
             //         0, 1, 0,
             //         0, 0, 1;
 
-            double alpha = 1e-3; // 12  
+            double alpha = 1e-12; // 12  
             double beta = 1;
 
             // prediction 공분산 예시
-            Q_noise_cov <<  alpha * m_gps_x_covariance,  0.0,     0.0,             
-                            0.0,    alpha * m_gps_y_covariance, 0.0,    // 센서 오차 감안 (휴리스틱)
+            Q_noise_cov <<  alpha,  0.0,     0.0,             
+                            0.0,    alpha, 0.0,    // 센서 오차 감안 (휴리스틱)
                             0.0,     0.0,     0.000000005;          // 직접 센서를 움직여본 후 공분산 구할 것
             
             
@@ -375,12 +375,11 @@ void EKF::ExtendKalmanFilter(){
 void EKF::Pub(){
     lanelet::projection::UtmProjector projection(m_origin);
 
-    std::cout << std::fixed << std::setprecision(15); // 소숫점 15자리까지 출력
+    std::cout << std::fixed << std::setprecision(10); // 소숫점 15자리까지 출력
     
     if(!m_utm_yaw_trigger && m_utm_bool){
-        cout <<  "-----------" << endl;
-        cout <<  "GPS(utm) X : " << m_utm.x << endl;
-        cout <<  "GPS(utm) Y : " << m_utm.y << endl;
+        cout <<  " GPS(utm) X : " << m_utm.x << endl;
+        cout <<  " GPS(utm) Y : " << m_utm.y << endl;
         // cout << "GPS(utm) cov X : " << m_gps_x_covariance << endl;
         // cout << "GPS(utm) cov Y : " << m_gps_y_covariance << endl;
         UTMPathVisualize(m_utm.x, m_utm.y);
@@ -394,23 +393,22 @@ void EKF::Pub(){
         m_vehicle_pose.x = m_utm.x;
         m_vehicle_pose.y = m_utm.y;
         m_vehicle_pose.heading = vehicle_yaw  * 180 / M_PI; //rad to degree
+        // m_vehicle_pose.heading = 172;
     }
     else{        
-        cout << "-----------" << endl;
-        cout << "GPS(utm) X : " << m_z_measured(0) << endl;
-        cout << "GPS(utm) Y : " << m_z_measured(1) << endl;
+        // cout << "-----------" << endl;
+        // cout << "GPS(utm) X : " << m_z_measured(0) << endl;
+        // cout << "GPS(utm) Y : " << m_z_measured(1) << endl;
         // cout << "GPS(utm) cov X : " << m_gps_x_covariance << endl;
         // cout << "GPS(utm) cov Y : " << m_gps_y_covariance << endl;
         // cout << "GPS(utm) Yaw : " << m_z_measured(2) * 180 / M_PI << endl;
         
-        cout << "-----------" << endl;
-        cout << "IMU DR X : " << m_x_prior(0) << endl;
-        cout << "IMU DR Y : " << m_x_prior(1) << endl;
-        cout << "IMU DR Yaw : " << m_x_prior(2) * 180 / M_PI << endl;
-        cout << "-----------" << endl;
-        cout << "EKF X : " << m_x_post(0) << endl;
-        cout << "EKF Y : " << m_x_post(1) << endl;
-        cout << "EKF Yaw : " << m_x_post(2) * 180 / M_PI << endl;
+        // cout << "-----------" << endl;
+        // cout << "IMU DR X : " << m_x_prior(0) << endl;
+        // cout << "IMU DR Y : " << m_x_prior(1) << endl;
+        // cout << "IMU DR Yaw : " << m_x_prior(2) * 180 / M_PI << endl;
+    
+
         
         EKFPathVisualize();
         IMUPathVisualize();
@@ -420,6 +418,13 @@ void EKF::Pub(){
         m_vehicle_pose.y = m_x_post(1);
         m_vehicle_pose.heading = m_x_post(2) * 180 / M_PI; //rad to degree
     }
+    // cout << "-----------" << endl;
+    cout << " EKF X : " << m_x_post(0) << endl;
+    cout << " EKF Y : " << m_x_post(1) << endl;
+    cout << " EKF Yaw : " << m_x_post(2) * 180 / M_PI << endl;
+    cout <<  " Velocity(m/s) : " << m_velocity_ms << endl;
+    cout << "-----------" << endl;
+
     vehicle_location.x() = m_vehicle_pose.x; 
     vehicle_location.y() = m_vehicle_pose.y;
     vehicle_location.z() = 0;
@@ -430,7 +435,7 @@ void EKF::Pub(){
     
     vehicle_lat_lon.x = gps_converted.lat;
     vehicle_lat_lon.y = gps_converted.lon;
-
+    m_vehicle_pose.isenable = m_utm_yaw_trigger;
     
     lat_lon_pub.publish(vehicle_lat_lon);
     vehicle_pose_pub.publish(m_vehicle_pose);

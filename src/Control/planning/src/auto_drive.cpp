@@ -28,8 +28,11 @@ class DrivingControl{
     protected:
         ros::NodeHandle nh;
         ros::Publisher pub_vehicle_input;
+        ros::Publisher lfd_pub;
+        ros::Publisher car_path_pub;
         ros::Subscriber lattice_sub;
         ros::Subscriber vehicle_status_sub; //from 로컬팀
+        
 
         // autonomous_msgs::CtrlCmd drivinginput;
         std_msgs::Int32 drivinginput;
@@ -45,6 +48,8 @@ class DrivingControl{
         bool ispath = false;
         bool is_look_forward_point = false;
 
+        bool isvel = false;
+
         //전역 좌표의 차량 기준 좌표로의 변환
         Matrix3d t;
         Matrix3d det_t;
@@ -54,7 +59,7 @@ class DrivingControl{
         nav_msgs::Path car_path;//차량기준 좌표계로 변환한 local_path(최종 저장 지점)
 
         double lfd_param = 0.0;
-        double wheel_base = 0.45;
+        double wheel_base = 0.375;
         double cur_steering = 0.0;
 
         double position_x = 0.0;
@@ -86,13 +91,19 @@ class DrivingControl{
             pub_vehicle_input = nh.advertise<std_msgs::Int32>
                                 ("/ctrl_cmd", 1);
 
+            lfd_pub = nh.advertise<geometry_msgs::PoseStamped>
+                                ("/lfd_point", 1);
+            car_path_pub = nh.advertise<nav_msgs::Path>
+                                ("/car_path", 1);
+
+
             lattice_sub = nh.subscribe
                           ("/local_path", 10, &DrivingControl::path_callback, this);
             
             vehicle_status_sub = nh.subscribe
                                  ("/m_vehicle_pose", 10, &DrivingControl::vehiclestatus_callback, this);
 
-            nh.param("auto_drive/lookahead", lfd_param, 1.5); //lookahead 포인트                            
+            nh.param("auto_drive/lookahead", lfd_param, 1.2); //lookahead 포인트                      
         }
 
         ~DrivingControl(){}
@@ -162,6 +173,7 @@ class DrivingControl{
                 // cout<<car_point<<endl;
 
                 car_path.poses.push_back(car_path_point);
+                car_path_pub.publish(car_path);
             }
         }
  
@@ -226,6 +238,24 @@ class DrivingControl{
                         + polylane.a1 * lfd_param 
                         + polylane.a2 * lfd_param * lfd_param
                         + polylane.a3 * lfd_param * lfd_param * lfd_param;
+
+
+            Matrix<double, 3, 1> lfdp;
+            lfdp << gx,
+                    gy,
+                     1;
+            Matrix<double, 3, 1> g_lfd;
+            g_lfd = t * lfdp;
+
+            // lfd 찍히는 부분            
+            geometry_msgs::PoseStamped lookahead_point;
+            lookahead_point.header.frame_id = "world";
+            lookahead_point.pose.position.x = g_lfd(0,0);
+            lookahead_point.pose.position.y = g_lfd(1,0);
+
+            lfd_pub.publish(lookahead_point);
+
+
             double ld = sqrt(pow(gx,2)+pow(gy,2));
             cout<<"ld: "<<ld<<endl;
             double e = gy;
@@ -238,12 +268,12 @@ class DrivingControl{
             if(steering_in > 30){
                     steering_in = 30;
                 }
-                else if(steering_in < -30){
-                    steering_in = -30;
-                }
+            else if(steering_in < -30){
+                steering_in = -30;
+            }
 
-                // drivinginput.steering = mapValue(steering_in, -30, 30, 128, 255);
-                drivinginput.data = mapValue(steering_in, -30, 30, 128, 255);
+            // drivinginput.steering = mapValue(steering_in, -30, 30, 128, 255);
+            drivinginput.data = mapValue(steering_in, -30, 30, 128, 255);
 
             // prev_steering = cur_steering;
             
@@ -296,6 +326,9 @@ class DrivingControl{
             // drivingInput.accel = accel;
             // drivingInput.brake = brake;
             //float64 타입
+            if(isvel == false){
+                drivinginput.data = 195;
+            }
             pub_vehicle_input.publish(drivinginput);
         }
 
@@ -310,7 +343,8 @@ class DrivingControl{
             position_x = status_msg.x;
             position_y = status_msg.y;
             heading = status_msg.heading * degree_to_radian;
-            // velocity = status_msg.velocity;
+            isvel = status_msg.isenable;
+        
         }
 
         void path_callback(const nav_msgs::Path::ConstPtr &msg){

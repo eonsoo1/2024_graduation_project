@@ -28,6 +28,13 @@ xdotool key alt+Left
 xdotool key alt+Left
 xdotool key alt+Left
 
+xdotool type  --delay 1 --clearmodifiers "sudo chmod 777 /dev/tty*"
+xdotool key --delay 100 Return
+xdotool type  --delay 1 --clearmodifiers "1"
+xdotool key --delay 100 Return
+sleep 1
+
+
 # 첫 번째 창을 수직 분할하여 새로운 터미널을 엽니다.
 xdotool type  --delay 1 --clearmodifiers "sd"
 xdotool key --delay 100 Return
@@ -39,17 +46,51 @@ sleep 1
 xdotool key --delay 100 alt+Right
 xdotool type  --delay 1 --clearmodifiers "sd"
 xdotool key --delay 100 Return
-xdotool type  --delay 1 --clearmodifiers "roslaunch ntirp_ros ntirp_ros.launch"
+xdotool type  --delay 1 --clearmodifiers "roslaunch ntrip_ros ntrip_ros.launch"
 xdotool key --delay 100 Return
 sleep 1
 
 # 세 번째 창을 수직 분할하여 새로운 터미널을 엽니다.
 xdotool key --delay 100 alt+Right
+xdotool type  --delay 1 --clearmodifiers "cd"
+xdotool key --delay 100 Return
+xdotool type  --delay 1 --clearmodifiers "rosrun rosserial_arduino serial_node.py _port:=/dev/ttyACM2 _baud:=9600"
+sleep 1
+
+
+# 세 번째 창을 수직 분할하여 새로운 터미널을 엽니다.
+xdotool key --delay 100 alt+Right
+xdotool type  --delay 1 --clearmodifiers "cd"
+xdotool key --delay 100 Return
+xdotool type  --delay 1 --clearmodifiers "arduino"
+sleep 1
+
+
+# 세 번째 창을 수직 분할하여 새로운 터미널을 엽니다.
+xdotool key --delay 100 alt+Down
+xdotool type  --delay 1 --clearmodifiers "sd"
+xdotool key --delay 100 Return
+xdotool type  --delay 1 --clearmodifiers "rosrun planning lattice_planner"
+xdotool key --delay 100 Return
+sleep 1
+
+# 세 번째 창을 수직 분할하여 새로운 터미널을 엽니다.
+xdotool key --delay 100 alt+Left
+xdotool type  --delay 1 --clearmodifiers "sd"
+xdotool key --delay 100 Return
+xdotool type  --delay 1 --clearmodifiers "rosrun planning auto_drive"
+xdotool key --delay 100 Return
+sleep 1
+
+# 세 번째 창을 수직 분할하여 새로운 터미널을 엽니다.
+xdotool key --delay 100 alt+Left
 xdotool type  --delay 1 --clearmodifiers "sd"
 xdotool key --delay 100 Return
 xdotool type  --delay 1 --clearmodifiers "roslaunch localization Local.launch"
 xdotool key --delay 100 Return
 sleep 1
+
+
 
 
 # 네 번째 창을 수직 분할하여 새로운 터미널을 엽니다.
