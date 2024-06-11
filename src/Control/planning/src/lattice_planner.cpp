@@ -277,7 +277,7 @@ int main(int argc, char **argv){
     ros::init(argc, argv, "planner");
 
     pathreader pr;
-    pr.readCsv("test.csv");
+    pr.readCsv("Nocheon_xy.csv");
 
     ros::Rate loop_rate(50);
     while(ros::ok()){

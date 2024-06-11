@@ -51,13 +51,13 @@ void parseCSVAndPublishMarkers(const std::string& filename, ros::Publisher& mark
         marker.pose.orientation.y = 0.0;
         marker.pose.orientation.z = 0.0;
         marker.pose.orientation.w = 1.0;
-        marker.scale.x = 0.1;  // 마커 크기 설정
-        marker.scale.y = 0.1;
+        marker.scale.x = 0.08;  // 마커 크기 설정
+        marker.scale.y = 0.08;
         marker.scale.z = 0.1;
         marker.color.a = 1.0;  // 마커 색상 설정 (알파값 포함)
-        marker.color.r = 0.0;
+        marker.color.r = 1.0;
         marker.color.g = 1.0;
-        marker.color.b = 0.0;
+        marker.color.b = 1.0;
 
         marker_array.markers.push_back(marker);  // 마커 배열에 추가
     }
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     std::string filename;
-    nh.param<std::string>("csv_filename", filename, "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Monday3_xy.csv");  // CSV 파일 이름 파라미터 읽기
+    nh.param<std::string>("csv_filename", filename, "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Nocheon_xy.csv");  // CSV 파일 이름 파라미터 읽기
 
     ros::Publisher marker_pub = nh.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 1);  // 마커 배열 발행자 설정
 

@@ -18,11 +18,11 @@ int main(int argc, char** argv) {
     lanelet::Origin origin({ORIGIN_LAT, ORIGIN_LON}); 
 
     // CSV 파일 경로
-    std::string csv_file_path = "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Monday4.csv";
+    std::string csv_file_path = "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Nocheon.csv";
     // OSM 파일 경로
-    std::string osm_file_path = "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Monday4.osm";
+    std::string osm_file_path = "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Nocheon.osm";
     // 수정된 CSV 파일 경로
-    std::string modified_csv_file_path = "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Monday4_xy.csv";
+    std::string modified_csv_file_path = "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Nocheon_xy.csv";
 
     // OSM 파일 열기
     std::ofstream osm_file(osm_file_path);

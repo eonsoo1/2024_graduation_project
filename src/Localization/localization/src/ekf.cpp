@@ -311,12 +311,12 @@ void EKF::ExtendKalmanFilter(){
             //         0, 1, 0,
             //         0, 0, 1;
 
-            double alpha = 1e-12; // 12  
+            double alpha = 1e-6; // 12  
             double beta = 1;
 
             // prediction 공분산 예시
-            Q_noise_cov <<  alpha,  0.0,     0.0,             
-                            0.0,    alpha, 0.0,    // 센서 오차 감안 (휴리스틱)
+            Q_noise_cov <<  alpha * 5 ,  0.0,     0.0,             
+                            0.0,    alpha * 5, 0.0,    // 센서 오차 감안 (휴리스틱)
                             0.0,     0.0,     0.000000005;          // 직접 센서를 움직여본 후 공분산 구할 것
             
             
