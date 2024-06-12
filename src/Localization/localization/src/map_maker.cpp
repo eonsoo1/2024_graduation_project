@@ -18,11 +18,11 @@ int main(int argc, char** argv) {
     lanelet::Origin origin({ORIGIN_LAT, ORIGIN_LON}); 
 
     // CSV 파일 경로
-    std::string csv_file_path = "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Nocheon.csv";
+    std::string csv_file_path = "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Monday3.csv";
     // OSM 파일 경로
-    std::string osm_file_path = "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Nocheon.osm";
+    std::string osm_file_path = "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Monday_test.osm";
     // 수정된 CSV 파일 경로
-    std::string modified_csv_file_path = "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Nocheon_xy.csv";
+    std::string modified_csv_file_path = "/home/eonsoo/2024_graduation_project/src/Localization/localization/map/Monday_test_xy.csv";
 
     // OSM 파일 열기
     std::ofstream osm_file(osm_file_path);
@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
         lanelet::BasicPoint2d point(point_3d.x(), point_3d.y());
 
         double dist = sqrt(pow((point.x() - prev_x), 2) + pow((point.y() - prev_y), 2));
-        if (is_first_point || dist >= 0.5) {
+        // if (is_first_point || dist >= 0.5) {
             // OSM 파일에 노드 정보 저장
             osm_file << "\t<node id='" << node_id << "' visible='true' version='1' lat='" << latitude_str << "' lon='" << longitude_str << "'/>\n";
 
@@ -99,13 +99,14 @@ int main(int argc, char** argv) {
             modified_csv_file << point.x() << "," << point.y() << std::endl;
 
             // 현재 값을 이전 값으로 업데이트
-            prev_x = point.x();
-            prev_y = point.y();
-            is_first_point = false; // 첫 번째 점 저장 완료
+            // prev_x = point.x();
+            // prev_y = point.y();
+            // is_first_point = false; // 첫 번째 점 저장 완료
             ++node_id; // 노드 ID 증가
-        } else {
-            std::cout << "이전 점과 현재 점의 거리가 0.5m 미만입니다. 건너뜁니다." << std::endl;
-        }
+        // }
+        //  else {
+            // std::cout << "이전 점과 현재 점의 거리가 0.5m 미만입니다. 건너뜁니다." << std::endl;
+        // }
     }
 
     // CSV 파일 닫기
