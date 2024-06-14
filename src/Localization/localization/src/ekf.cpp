@@ -36,8 +36,8 @@
 #define N           3  
 #define M           2 
 
-#define ORIGIN_LAT 37.544322//37.542883////37.542608//330093 // 삼각지 x좌표
-#define ORIGIN_LON 127.078958//127.077443////127.076774//4156806 // 삼각지 y좌표
+#define ORIGIN_LAT 37.5414684 // 37.544322 // 삼각지 x좌표
+#define ORIGIN_LON 127.078055 //127.078958 // 삼각지 y좌표
 
 using namespace std;
 
@@ -54,6 +54,7 @@ class EKF{
         ros::Subscriber utm_sub;
         ros::Subscriber imu_sub;
         ros::Subscriber gps_sub;
+        ros::Subscriber hall_sub;
         ros::Subscriber gps_vel_sub;
         ros::Publisher utm_path_pub;
         ros::Publisher imu_path_pub;
@@ -67,10 +68,13 @@ class EKF{
 
         double m_gps_x_covariance;
         double m_gps_y_covariance;
-        double m_velocity_ms;        
+        double m_velocity_ms;
+        double m_gps_vel_ms;
+        double m_hall_vel_ms;        
         double m_prev_utm_x;
         double m_prev_utm_y;
         double m_yaw_rate;
+        double alpha;
 
         Pose m_utm;
         Pose m_imu;
@@ -87,6 +91,7 @@ class EKF{
         bool m_utm_yaw_trigger;
         bool m_utm_sub_bool;
         bool m_imu_sub_bool;
+        bool m_hall_sub_bool;
 
         nav_msgs::Path m_utm_path;
         nav_msgs::Path m_imu_path;
@@ -121,8 +126,10 @@ class EKF{
         ~EKF(){};
         void GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg);
         void GPSVelCallback(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr& gps_velocity_msg);
+        void HallCallback(const std_msgs::Float32::ConstPtr& hall_msg);
         void UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg);
         void IMUCallback(const localization::PoseMsg::ConstPtr& imu_data_msg);
+        void CalculateSpeed();
         void ExtendKalmanFilter();
         void EKFPathVisualize();
         void IMUPathVisualize();
@@ -140,6 +147,8 @@ EKF::EKF() : m_P_post(N, N), m_P_prior(N, N), A_jacb(N, N), H_jacb(M, N), Q_nois
 
     gps_sub = nh.subscribe("/ublox_gps/fix", 1000, &EKF::GPSCallback, this);
     gps_vel_sub = nh.subscribe("/ublox_gps/fix_velocity", 1000, &EKF::GPSVelCallback, this);
+    hall_sub = nh.subscribe("/filtered_speed", 1000, &EKF::HallCallback, this);
+
     utm_sub = nh.subscribe("/utm_coord", 1000, &EKF::UTMCallback, this);
     imu_sub = nh.subscribe("/imu_pose", 1000, &EKF::IMUCallback, this);
     
@@ -165,6 +174,7 @@ EKF::EKF() : m_P_post(N, N), m_P_prior(N, N), A_jacb(N, N), H_jacb(M, N), Q_nois
     m_imu_sub_bool = false;
     m_utm_update_bool = false;
     m_utm_bool = false;
+    m_hall_sub_bool = false;
     m_prev_utm_x = 0;
     m_prev_utm_y = 0;
 
@@ -185,9 +195,14 @@ void EKF::GPSCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_data_msg){
 void EKF::GPSVelCallback(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr& gps_velocity_msg){
     
     // 홀센서 데이터로 수정 예정
-    m_velocity_ms = sqrt(pow(gps_velocity_msg->twist.twist.linear.x, 2) + pow(gps_velocity_msg->twist.twist.linear.y, 2)); // (m/s 단위)
+    m_gps_vel_ms = sqrt(pow(gps_velocity_msg->twist.twist.linear.x, 2) + pow(gps_velocity_msg->twist.twist.linear.y, 2)); // (m/s 단위)
     m_gps_velocity_sub_bool = true;
 };
+
+void EKF::HallCallback(const std_msgs::Float32::ConstPtr& hall_msg){
+    m_hall_vel_ms = hall_msg->data;
+    m_hall_sub_bool = true;
+}
 
 void EKF::UTMCallback(const geometry_msgs::Point::ConstPtr& utm_data_msg){
     
@@ -234,6 +249,15 @@ void EKF::IMUCallback(const localization::PoseMsg::ConstPtr& imu_data_msg){
     m_imu_sub_bool = true;
 
 };
+
+void EKF::CalculateSpeed(){
+    if(m_gps_velocity_sub_bool && m_hall_sub_bool){
+        m_velocity_ms = alpha * m_gps_vel_ms + (1 - alpha) * m_hall_vel_ms;
+    }
+    else{
+        m_velocity_ms = 0.0;
+    }
+}
 
 Eigen::VectorXd EKF::EstimatedModel(Eigen::VectorXd& estimated_input){
 
@@ -578,6 +602,7 @@ int main(int argc, char **argv){
     
 
     while(ros::ok()){
+        ekf.CalculateSpeed();
         ekf.ExtendKalmanFilter();
         ekf.Pub();
         ros::spinOnce();
