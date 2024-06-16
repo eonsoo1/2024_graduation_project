@@ -262,6 +262,7 @@ class pathreader{
         }
 
         //충돌여부 판단하여 경로 생성하는 시점
+        // 거리값 이상함
         bool checkObject(){
             is_crash = false;
             double dis = 0.0;
@@ -299,6 +300,7 @@ class pathreader{
             selected_lane = -1;
 
             array<double, 8> lane_weight = {4, 3, 2, 1, 1, 2, 3, 4};
+            // array<double, 8> lane_weight = {8, 7, 6, 5, 1, 2, 3, 4};
             double dis = 0.0;
             double check_dis = 1.0;
 
@@ -356,14 +358,15 @@ class pathreader{
             }
             cout<<""<<endl;
             
-            vector<double> minindex;
+            vector<int> minindex;
             auto minIndex = min_element(lane_weight.begin(), lane_weight.end());
             // selected_lane = distance(lane_weight.begin(), minIndex); //lane index 반환됨
             double min_weight = *minIndex;
 
+            minindex.clear();
             for(int i = 0; lane_weight.size()>i ; ++i){
                 if(lane_weight[i] == min_weight){
-                    minindex.push_back();
+                    minindex.push_back(i);
                 }
             }
 
@@ -659,7 +662,7 @@ class pathreader{
 
                             geometry_msgs::PoseStamped read_pose;
 
-                            read_pose.pose.position.x = glo3bal_result(0,0);
+                            read_pose.pose.position.x = global_result(0,0);
                             read_pose.pose.position.y = global_result(1,0);
                             read_pose.pose.position.z = 0;
                             read_pose.pose.orientation.x = 0;
