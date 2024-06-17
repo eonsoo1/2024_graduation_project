@@ -121,6 +121,7 @@ class pathreader{
         void object_callback(const autonomous_msgs::ObstacleArray::ConstPtr &msg){
             // lidar_object_data = *msg;
             // objectTranslation();
+            // checkValidObject();
             // buildSafetyObject();
 
             // buildWall();
@@ -131,6 +132,13 @@ class pathreader{
             
 
         }
+
+        // void checkEmergency(){
+        //     //lidar_object_data들 확인 후 거리가 30cm 이내에 들어오는 장애물이 있다면 정지
+        //     //lidar_object_data.cluster.clear();
+        //     //아두이노는 steering에 300 넘는 값 보냄
+        //     //0 다시 보내면 위험 해
+        // }
 
         void buildWall(){
             // 장애물의 바깥쪽을 제한하는 방법으로 벽세우기
@@ -190,6 +198,31 @@ class pathreader{
 
         //     }
         // }
+
+        void checkValidObject(){
+            autonomous_msgs::ObstacleArray valid_objects;
+            for(int obstacle = 0 ; object_data.cluster.size() > obstacle ; ++obstacle){
+                // autonomous_msgs::Obstacle valid_object;
+                double dx = object_data.cluster[obstacle].mid_x - status_msg.x;
+                double dy = object_data.cluster[obstacle].mid_y - status_msg.y;
+                double dis = sqrt(pow(dx,2)+pow(dy,2));
+
+                if(dis<7.0){
+                    // valid_object.mid_x = object_data.cluster[obstacle].mid_x;
+                    // valid_object.mid_y = object_data.cluster[obstacle].mid_y;
+                    // valid_object.width = object_data.cluster[obstacle].width;
+                    // valid_object.height = object_data.cluster[obstacle].height;
+                    // valid_objects.cluster.push_back(valid_object)
+                    valid_objects.cluster.push_back(object_data.cluster[obstacle])
+                }
+
+            }
+
+            object_data.cluster.clear();
+            for(int i = 0 ; valid_objects.cluster.size()>i; ++i){
+                object_data.cluster.push_back(valid_objects.cluster[i]);
+            }
+        }
 
         
         void buildSafetyObject(){
